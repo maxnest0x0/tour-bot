@@ -1,0 +1,7 @@
+tasks:
+  - init: pipenv install
+    command: pipenv run python main.py
+
+vscode:
+  extensions:
+    - ms-python.python
