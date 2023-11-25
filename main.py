@@ -4,7 +4,8 @@ import telegram.ext as ext
 from secret import token
 
 async def start(update: tg.Update, context: ext.ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text("Hello World")
+    if update.message is not None:
+        await update.message.reply_text("Hello World")
 
 if __name__ == "__main__":
     app = ext.ApplicationBuilder().token(token).build()
