@@ -1,5 +1,12 @@
 tasks:
-  - init: pipenv install
+  - before: |
+      curl https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor |
+        sudo tee /etc/apt/trusted.gpg.d/google.gpg > /dev/null
+      echo "deb [arch=amd64] https://dl.google.com/linux/chrome/deb/ stable main" |
+        sudo tee /etc/apt/sources.list.d/google-chrome.list > /dev/null
+      sudo apt-get update
+      sudo apt-get install --yes google-chrome-stable
+    init: pipenv install
     command: pipenv run python main.py
 
 vscode:
