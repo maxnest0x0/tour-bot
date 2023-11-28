@@ -6,7 +6,7 @@ tasks:
         sudo tee /etc/apt/sources.list.d/google-chrome.list > /dev/null
       sudo apt-get update
       sudo apt-get install --yes google-chrome-stable
-    init: pipenv install
+    init: pipenv install --dev
     command: pipenv run python main.py
 
 vscode:
