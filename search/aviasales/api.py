@@ -5,7 +5,7 @@ import time
 from typing import Any
 
 from .browser import AviasalesBrowserAuth
-from .data_types import SearchStartRequestData
+from .data_types import SearchParams
 
 class AviasalesAPIError(Exception):
     pass
@@ -51,14 +51,14 @@ class AviasalesAPI:
         except requests.JSONDecodeError as error:
             raise AviasalesAPIError("Invalid JSON") from error
 
-    def search_start(self, data: SearchStartRequestData) -> SearchAPI:
+    def search_start(self, search_params: SearchParams, *, market_code: str="ru", currency_code: str="rub", language: str="ru") -> SearchAPI:
         body = {
-            "search_params": data,
+            "search_params": search_params,
             "marker": "direct",
-            "market_code": "ru",
-            "currency_code": "rub",
+            "market_code": market_code,
+            "currency_code": currency_code,
             "languages": {
-                "ru": 1,
+                language: 1,
             },
         }
 
@@ -73,15 +73,16 @@ class SearchAPI:
         self.search_id = res["search_id"]
         self.results_domain = res["results_url"]
 
-    def search_results(self, data):
-        body = {**data, "search_id": self.search_id}
+    def search_results(self, ticket_limit: int, *, wait_until_done: bool=True, wait_time: float=2):
+        body = {"limit": ticket_limit, "search_id": self.search_id}
 
         endpoint = self.SEARCH_RESULTS_ENDPOINT_TEMPLATE.format(self.results_domain)
         res = self._api.request(endpoint, body)
 
-        while not self._is_search_done(res):
-            time.sleep(2)
-            res = self._api.request(endpoint, body)
+        if wait_until_done:
+            while not self._is_search_done(res):
+                time.sleep(wait_time)
+                res = self._api.request(endpoint, body)
 
         return self._prepare_data(res)
 

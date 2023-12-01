@@ -12,7 +12,7 @@ class Passengers(TypedDict):
 
 TripClass = Literal["Y", "W", "C", "F"]
 
-class SearchStartRequestData(TypedDict):
+class SearchParams(TypedDict):
     directions: Sequence[Direction]
     passengers: Passengers
     trip_class: TripClass
