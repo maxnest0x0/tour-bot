@@ -25,27 +25,30 @@ class AviasalesAPI:
 
     def __init__(self) -> None:
         self._browser = AviasalesBrowserAuth()
+        self.update_token()
+
+    def update_token(self) -> None:
         self.token = self._browser.get_token()
 
     def request(self, endpoint: str, body: Any) -> Any:
         r = self.raw_request(endpoint, self.token, body)
 
         if r.status_code == requests.codes.forbidden:
-            self.token = self._browser.get_token()
+            self.update_token()
             r = self.raw_request(endpoint, self.token, body)
 
         if r.status_code == requests.codes.forbidden:
-            raise AviasalesAPIError("auth error")
+            raise AviasalesAPIError("Auth error")
 
         try:
             r.raise_for_status()
         except requests.HTTPError as error:
-            raise AviasalesAPIError("bad HTTP status") from error
+            raise AviasalesAPIError("Bad HTTP status") from error
 
         try:
             return r.json()
         except requests.JSONDecodeError as error:
-            raise AviasalesAPIError("invalid JSON") from error
+            raise AviasalesAPIError("Invalid JSON") from error
 
     def search_start(self, data: SearchStartRequestData) -> SearchAPI:
         body = {
@@ -93,9 +96,9 @@ class SearchAPI:
 
         for ticket in self._tickets:
             ticket_metadata = self._prepare_ticket_metadata(ticket)
-            ticket_complex_data = self._prepare_ticket_complex_data(ticket)
+            complex_ticket_data = self._prepare_complex_ticket_data(ticket)
 
-            ticket_data = {**ticket_metadata, **ticket_complex_data}
+            ticket_data = {**ticket_metadata, **complex_ticket_data}
             tickets_data["tickets"].append(ticket_data)
 
         return tickets_data
@@ -133,9 +136,9 @@ class SearchAPI:
         }
         return ticket_metadata
 
-    def _prepare_ticket_complex_data(self, ticket):
+    def _prepare_complex_ticket_data(self, ticket):
+        complex_ticket_data = {"segments": []}
         cheapest_proposal = ticket["proposals"][0]
-        ticket_complex_data = {"segments": []}
         for segment in ticket["segments"]:
             segment_data = {"flights": []}
             flight_terms = [cheapest_proposal["flight_terms"][str(flight_index)] for flight_index in segment["flights"]]
@@ -160,14 +163,8 @@ class SearchAPI:
                 local_departure_datetime = flight_leg["local_departure_date_time"]
                 local_arrival_datetime = flight_leg["local_arrival_date_time"]
 
-                departure_data = {
-                    "timestamp": departure_timestamp,
-                    "local_datetime": local_departure_datetime,
-                }
-                arrival_data = {
-                    "timestamp": arrival_timestamp,
-                    "local_datetime": local_arrival_datetime,
-                }
+                departure_data = {"timestamp": departure_timestamp, "local_datetime": local_departure_datetime}
+                arrival_data = {"timestamp": arrival_timestamp, "local_datetime": local_arrival_datetime}
 
                 flight_data = {
                     "seats_available": seats_available,
@@ -179,9 +176,9 @@ class SearchAPI:
                 }
                 segment_data["flights"].append(flight_data)
 
-            ticket_complex_data["segments"].append(segment_data)
+            complex_ticket_data["segments"].append(segment_data)
 
-        return ticket_complex_data
+        return complex_ticket_data
 
     def _prepare_place_data(self, airport_code):
         airport = self._places["airports"][airport_code]

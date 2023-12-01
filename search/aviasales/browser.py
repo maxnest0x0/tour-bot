@@ -30,14 +30,14 @@ class AviasalesBrowserAuth:
 
     def _assert_driver_alive(self) -> None:
         if not self.is_driver_alive():
-            raise AviasalesBrowserAuthError("browser is not running")
+            raise AviasalesBrowserAuthError("Browser is not running")
 
     def get_token(self) -> str:
         self._assert_driver_alive()
 
         cookie = self._driver.get_cookie("_awt")
         if cookie is None:
-            raise AviasalesBrowserAuthError("token cookie not found")
+            raise AviasalesBrowserAuthError("Token cookie not found")
 
         return cast(str, cookie["value"])
 
