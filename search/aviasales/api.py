@@ -51,7 +51,7 @@ class AviasalesAPI:
         except requests.JSONDecodeError as error:
             raise AviasalesAPIError("Invalid JSON") from error
 
-    def search_start(self, search_params: SearchParams, *, market_code: str="ru", currency_code: str="rub", language: str="ru") -> SearchAPI:
+    def search_start(self, search_params: SearchParams, *, market_code: str="ru", currency_code: str="RUB", language: str="ru") -> SearchAPI:
         body = {
             "search_params": search_params,
             "marker": "direct",
@@ -60,23 +60,27 @@ class AviasalesAPI:
             "languages": {
                 language: 1,
             },
+            "client_features": {
+                "badges": True,
+            },
         }
 
         res = self.request(self.SEARCH_START_ENDPOINT, body)
-        return SearchAPI(self, res)
+        return SearchAPI(self, res, language)
 
 class SearchAPI:
     SEARCH_RESULTS_ENDPOINT_TEMPLATE = "https://{}/search/v3/results"
 
-    def __init__(self, api: AviasalesAPI, res: Any):
+    def __init__(self, api: AviasalesAPI, res: Any, language: str):
         self._api = api
-        self.search_id = res["search_id"]
-        self.results_domain = res["results_url"]
+        self._search_id = res["search_id"]
+        self._results_domain = res["results_url"]
+        self._language = language
 
     def search_results(self, ticket_limit: int, *, wait_until_done: bool=True, wait_time: float=2):
-        body = {"limit": ticket_limit, "search_id": self.search_id}
+        body = {"limit": ticket_limit, "search_id": self._search_id}
 
-        endpoint = self.SEARCH_RESULTS_ENDPOINT_TEMPLATE.format(self.results_domain)
+        endpoint = self.SEARCH_RESULTS_ENDPOINT_TEMPLATE.format(self._results_domain)
         res = self._api.request(endpoint, body)
 
         if wait_until_done:
@@ -120,13 +124,14 @@ class SearchAPI:
         if "badges" in ticket:
             badge = ticket["badges"][0]
             badge_type = badge["type"]
-            badge_name = badge["meta"]["name"]["ru"]
+            badge_name = badge["meta"]["name"][self._language]
 
             badge_data = {"type": badge_type, "name": badge_name}
 
         proposals = ticket["proposals"]
         cheapest_proposal = proposals[0]
         default_price = cheapest_proposal["price"]["value"]
+        currency_code = cheapest_proposal["price"]["currency_code"]
 
         price_with_baggage = None
         def check_for_baggage(proposal):
@@ -137,7 +142,7 @@ class SearchAPI:
             cheapest_proposal_with_baggage = proposals_with_baggage[0]
             price_with_baggage = cheapest_proposal_with_baggage["price"]["value"]
 
-        price_data = {"default": default_price, "with_baggage": price_with_baggage}
+        price_data = {"default": default_price, "with_baggage": price_with_baggage, "currency_code": currency_code}
 
         ticket_metadata = {
             "tags": tags_data,
@@ -158,7 +163,7 @@ class SearchAPI:
                     seats_available = flight_term["seats_available"]
 
                 airline_id = flight_term["marketing_carrier_designator"]["airline_id"]
-                airline_name = self._airlines[airline_id]["name"]["ru"]["default"]
+                airline_name = self._airlines[airline_id]["name"][self._language]["default"]
                 airline_data = {"id": airline_id, "name": airline_name}
 
                 number = flight_term["marketing_carrier_designator"]["number"]
@@ -192,17 +197,17 @@ class SearchAPI:
 
     def _prepare_place_data(self, airport_code):
         airport = self._places["airports"][airport_code]
-        airport_name = airport["name"]["ru"]["default"]
+        airport_name = airport["name"][self._language]["default"]
         airport_data = {"code": airport_code, "name": airport_name}
 
         city_code = airport["city_code"]
         city = self._places["cities"][city_code]
-        city_name = city["name"]["ru"]["default"]
+        city_name = city["name"][self._language]["default"]
         city_data = {"code": city_code, "name": city_name}
 
         country_code = city["country"]
         country = self._places["countries"][country_code]
-        country_name = country["name"]["ru"]["default"]
+        country_name = country["name"][self._language]["default"]
         country_data = {"code": country_code, "name": country_name}
 
         place_data = {
