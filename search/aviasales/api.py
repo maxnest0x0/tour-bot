@@ -88,7 +88,10 @@ class SearchAPI:
                 time.sleep(wait_time)
                 res = self._api.request(endpoint, body)
 
-        return cast(SearchResults, self._prepare_data(res))
+        try:
+            return cast(SearchResults, self._prepare_data(res))
+        except Exception as error:
+            raise AviasalesAPIError("Failed to prepare response data") from error
 
     def _is_search_done(self, res: Any) -> bool:
         chunk = res[0]
