@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import requests
 import time
-from typing import Any
+from typing import Any, cast
 
 from .browser import AviasalesBrowserAuth
-from .data_types import SearchParams
+from .data_types import SearchParams, SearchResults
 
 class AviasalesAPIError(Exception):
     pass
@@ -77,7 +77,7 @@ class SearchAPI:
         self._results_domain = res["results_url"]
         self._language = language
 
-    def search_results(self, ticket_limit: int, *, wait_until_done: bool=True, wait_time: float=2):
+    def search_results(self, ticket_limit: int, *, wait_until_done: bool=True, wait_time: float=2) -> SearchResults:
         body = {"limit": ticket_limit, "search_id": self._search_id}
 
         endpoint = self.SEARCH_RESULTS_ENDPOINT_TEMPLATE.format(self._results_domain)
@@ -88,13 +88,13 @@ class SearchAPI:
                 time.sleep(wait_time)
                 res = self._api.request(endpoint, body)
 
-        return self._prepare_data(res)
+        return cast(SearchResults, self._prepare_data(res))
 
-    def _is_search_done(self, res):
+    def _is_search_done(self, res: Any) -> bool:
         chunk = res[0]
-        return chunk["last_update_timestamp"] == 0
+        return cast(bool, chunk["last_update_timestamp"] == 0)
 
-    def _prepare_data(self, res):
+    def _prepare_data(self, res: Any) -> Any:
         chunk = res[0]
 
         self._airlines = chunk["airlines"]
@@ -105,8 +105,8 @@ class SearchAPI:
         tickets_data = self._prepare_tickets_data()
         return tickets_data
 
-    def _prepare_tickets_data(self):
-        tickets_data = {"tickets": []}
+    def _prepare_tickets_data(self) -> Any:
+        tickets_data: Any = {"tickets": []}
 
         for ticket in self._tickets:
             ticket_metadata = self._prepare_ticket_metadata(ticket)
@@ -117,7 +117,7 @@ class SearchAPI:
 
         return tickets_data
 
-    def _prepare_ticket_metadata(self, ticket):
+    def _prepare_ticket_metadata(self, ticket: Any) -> Any:
         tags_data = ticket["tags"]
 
         badge_data = None
@@ -134,7 +134,7 @@ class SearchAPI:
         currency_code = cheapest_proposal["price"]["currency_code"]
 
         price_with_baggage = None
-        def check_for_baggage(proposal):
+        def check_for_baggage(proposal: Any) -> bool:
             baggage = proposal["minimum_fare"]["baggage"]
             return baggage is not None and baggage["count"] > 0
         proposals_with_baggage = [proposal for proposal in proposals if check_for_baggage(proposal)]
@@ -151,11 +151,11 @@ class SearchAPI:
         }
         return ticket_metadata
 
-    def _prepare_complex_ticket_data(self, ticket):
-        complex_ticket_data = {"segments": []}
+    def _prepare_complex_ticket_data(self, ticket: Any) -> Any:
+        complex_ticket_data: Any = {"segments": []}
         cheapest_proposal = ticket["proposals"][0]
         for segment in ticket["segments"]:
-            segment_data = {"flights": []}
+            segment_data: Any = {"flights": []}
             flight_terms = [cheapest_proposal["flight_terms"][str(flight_index)] for flight_index in segment["flights"]]
             for flight_term in flight_terms:
                 seats_available = None
@@ -195,7 +195,7 @@ class SearchAPI:
 
         return complex_ticket_data
 
-    def _prepare_place_data(self, airport_code):
+    def _prepare_place_data(self, airport_code: str) -> Any:
         airport = self._places["airports"][airport_code]
         airport_name = airport["name"][self._language]["default"]
         airport_data = {"code": airport_code, "name": airport_name}
