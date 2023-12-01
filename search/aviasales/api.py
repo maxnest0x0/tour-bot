@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import requests
+import time
 from typing import Any
 
 from .browser import AviasalesBrowserAuth
@@ -78,7 +79,15 @@ class SearchAPI:
         endpoint = self.SEARCH_RESULTS_ENDPOINT_TEMPLATE.format(self.results_domain)
         res = self._api.request(endpoint, body)
 
+        while not self._is_search_done(res):
+            time.sleep(2)
+            res = self._api.request(endpoint, body)
+
         return self._prepare_data(res)
+
+    def _is_search_done(self, res):
+        chunk = res[0]
+        return chunk["last_update_timestamp"] == 0
 
     def _prepare_data(self, res):
         chunk = res[0]
