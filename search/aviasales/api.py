@@ -1,11 +1,18 @@
 from __future__ import annotations
 
 import requests
-import time
+import functools
+import asyncio as aio
 from typing import Any, cast
 
 from .browser import AviasalesBrowserAuth
 from .data_types import SearchParams, SearchResults
+
+@functools.wraps(requests.request)
+async def arequest(*args: Any, **kwargs: Any) -> requests.Response:
+    loop = aio.get_running_loop()
+    func = functools.partial(requests.request, *args, **kwargs)
+    return await loop.run_in_executor(None, func)
 
 class AviasalesAPIError(Exception):
     pass
@@ -15,14 +22,14 @@ class AviasalesAPI:
     SEARCH_START_ENDPOINT = f"https://tickets-api.{AVIASALES_DOMAIN}/search/v2/start"
 
     @staticmethod
-    def raw_request(endpoint: str, token: str, body: Any) -> requests.Response:
+    async def raw_request(endpoint: str, token: str, body: Any) -> requests.Response:
         headers = {
             "x-client-type": "web",
             "x-origin-cookie": f"_awt={token}",
             "cookie": "auid=i'm just a random string",
         }
 
-        return requests.post(endpoint, headers=headers, json=body)
+        return await arequest("POST", endpoint, headers=headers, json=body)
 
     def __init__(self) -> None:
         self._browser = AviasalesBrowserAuth()
@@ -31,12 +38,12 @@ class AviasalesAPI:
     def update_token(self) -> None:
         self.token = self._browser.get_token()
 
-    def request(self, endpoint: str, body: Any) -> Any:
-        r = self.raw_request(endpoint, self.token, body)
+    async def request(self, endpoint: str, body: Any) -> Any:
+        r = await self.raw_request(endpoint, self.token, body)
 
         if r.status_code == requests.codes.forbidden:
             self.update_token()
-            r = self.raw_request(endpoint, self.token, body)
+            r = await self.raw_request(endpoint, self.token, body)
 
         if r.status_code == requests.codes.forbidden:
             raise AviasalesAPIError("Auth error")
@@ -51,7 +58,7 @@ class AviasalesAPI:
         except requests.JSONDecodeError as error:
             raise AviasalesAPIError("Invalid JSON") from error
 
-    def search_start(self, search_params: SearchParams, *, market_code: str="ru", currency_code: str="RUB", language: str="ru") -> SearchAPI:
+    async def search_start(self, search_params: SearchParams, *, market_code: str="ru", currency_code: str="RUB", language: str="ru") -> SearchAPI:
         body = {
             "search_params": search_params,
             "marker": "direct",
@@ -65,7 +72,7 @@ class AviasalesAPI:
             },
         }
 
-        res = self.request(self.SEARCH_START_ENDPOINT, body)
+        res = await self.request(self.SEARCH_START_ENDPOINT, body)
         return SearchAPI(self, res, language)
 
 class SearchAPI:
@@ -77,16 +84,16 @@ class SearchAPI:
         self._results_domain = res["results_url"]
         self._language = language
 
-    def search_results(self, ticket_limit: int, *, wait_until_done: bool=True, wait_time: float=2) -> SearchResults:
+    async def search_results(self, ticket_limit: int, *, wait_until_done: bool=True, wait_time: float=2) -> SearchResults:
         body = {"limit": ticket_limit, "search_id": self._search_id}
 
         endpoint = self.SEARCH_RESULTS_ENDPOINT_TEMPLATE.format(self._results_domain)
-        res = self._api.request(endpoint, body)
+        res = await self._api.request(endpoint, body)
 
         if wait_until_done:
             while not self._is_search_done(res):
-                time.sleep(wait_time)
-                res = self._api.request(endpoint, body)
+                await aio.sleep(wait_time)
+                res = await self._api.request(endpoint, body)
 
         try:
             return cast(SearchResults, self._prepare_data(res))
