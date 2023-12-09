@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 import requests
 import functools
 import asyncio as aio
@@ -12,6 +11,7 @@ from .data_types import SearchParams, SearchResults
 async def arequest(*args: Any, **kwargs: Any) -> requests.Response:
     loop = aio.get_running_loop()
     func = functools.partial(requests.request, *args, **kwargs)
+
     return await loop.run_in_executor(None, func)
 
 class AviasalesAPIError(Exception):
@@ -54,9 +54,11 @@ class AviasalesAPI:
             raise AviasalesAPIError("Bad HTTP status") from error
 
         try:
-            return r.json()
+            res = r.json()
         except requests.JSONDecodeError as error:
             raise AviasalesAPIError("Invalid JSON") from error
+
+        return res
 
     async def search_start(self, search_params: SearchParams, *, market_code: str="ru", currency_code: str="RUB", language: str="ru") -> SearchAPI:
         body = {
@@ -64,19 +66,15 @@ class AviasalesAPI:
             "marker": "direct",
             "market_code": market_code,
             "currency_code": currency_code,
-            "languages": {
-                language: 1,
-            },
-            "client_features": {
-                "badges": True,
-            },
+            "languages": {language: 1},
+            "client_features": {"badges": True},
         }
 
         res = await self.request(self.SEARCH_START_ENDPOINT, body)
         return SearchAPI(self, res, language)
 
 class SearchAPI:
-    SEARCH_RESULTS_ENDPOINT_TEMPLATE = "https://{}/search/v3/results"
+    SEARCH_RESULTS_ENDPOINT_PATTERN = "https://{}/search/v3/results"
 
     def __init__(self, api: AviasalesAPI, res: Any, language: str):
         self._api = api
@@ -87,7 +85,7 @@ class SearchAPI:
     async def search_results(self, ticket_limit: int, *, wait_until_done: bool=True, wait_time: float=2) -> SearchResults:
         body = {"limit": ticket_limit, "search_id": self._search_id}
 
-        endpoint = self.SEARCH_RESULTS_ENDPOINT_TEMPLATE.format(self._results_domain)
+        endpoint = self.SEARCH_RESULTS_ENDPOINT_PATTERN.format(self._results_domain)
         res = await self._api.request(endpoint, body)
 
         if wait_until_done:
@@ -143,10 +141,11 @@ class SearchAPI:
         default_price = cheapest_proposal["price"]["value"]
         currency_code = cheapest_proposal["price"]["currency_code"]
 
-        price_with_baggage = None
         def check_for_baggage(proposal: Any) -> bool:
             baggage = proposal["minimum_fare"]["baggage"]
             return baggage is not None and baggage["count"] > 0
+
+        price_with_baggage = None
         proposals_with_baggage = [proposal for proposal in proposals if check_for_baggage(proposal)]
         if proposals_with_baggage:
             cheapest_proposal_with_baggage = proposals_with_baggage[0]
@@ -159,14 +158,17 @@ class SearchAPI:
             "badge": badge_data,
             "price": price_data,
         }
+
         return ticket_metadata
 
     def _prepare_complex_ticket_data(self, ticket: Any) -> Any:
         complex_ticket_data: Any = {"segments": []}
         cheapest_proposal = ticket["proposals"][0]
+
         for segment in ticket["segments"]:
             segment_data: Any = {"flights": []}
             flight_terms = [cheapest_proposal["flight_terms"][str(flight_index)] for flight_index in segment["flights"]]
+
             for flight_term in flight_terms:
                 seats_available = None
                 if "seats_available" in flight_term:
@@ -199,6 +201,7 @@ class SearchAPI:
                     "departure": departure_data,
                     "arrival": arrival_data,
                 }
+
                 segment_data["flights"].append(flight_data)
 
             complex_ticket_data["segments"].append(segment_data)
@@ -225,4 +228,5 @@ class SearchAPI:
             "city": city_data,
             "country": country_data,
         }
+
         return place_data
