@@ -99,16 +99,21 @@ class SearchAPI:
             raise AviasalesAPIError("Failed to prepare response data") from error
 
     def _is_search_done(self, res: Any) -> bool:
+        if not res:
+            return False
+
         chunk = res[0]
         return cast(bool, chunk["last_update_timestamp"] == 0)
 
     def _prepare_data(self, res: Any) -> Any:
-        chunk = res[0]
-
-        self._airlines = chunk["airlines"]
-        self._flight_legs = chunk["flight_legs"]
-        self._places = chunk["places"]
-        self._tickets = chunk["tickets"]
+        if res:
+            chunk = res[0]
+            self._airlines = chunk["airlines"]
+            self._flight_legs = chunk["flight_legs"]
+            self._places = chunk["places"]
+            self._tickets = chunk["tickets"]
+        else:
+            self._tickets = []
 
         tickets_data = self._prepare_tickets_data()
         return tickets_data
