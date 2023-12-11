@@ -5,13 +5,13 @@ user_token = '20de5dba20de5dba20de5dbae323c8c4ad220de20de5dba45a8831f4c6fd24ff12
 version = 5.199
 domain = 'krugosvetka66'
 
-for i in range(1, 501, 20):
+for post_number in range(1, 501, 20):
     my_response = requests.get('https://api.vk.com/method/wall.get',
                                params={
                                    'access_token': user_token,
                                    'domain': domain,
                                    'v': version,
-                                   'offset': i
+                                   'offset': post_number
                                })
 
     result = my_response.json()
