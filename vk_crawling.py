@@ -5,7 +5,7 @@ user_token = '20de5dba20de5dba20de5dbae323c8c4ad220de20de5dba45a8831f4c6fd24ff12
 version = 5.199
 domain = 'krugosvetka66'
 
-for post_number in range(1, 501, 20):
+for post_number in range(1, 801, 20):
     my_response = requests.get('https://api.vk.com/method/wall.get',
                                params={
                                    'access_token': user_token,
@@ -44,7 +44,7 @@ for post_number in range(1, 501, 20):
                                             u"\u231a"
                                             u"\ufe0f"
                                             u"\u3030""]+", re.UNICODE)
-                almost_result = emoji_links.sub(r'', text)
+                almost_result = emoji_links.sub(r' ', text)
                 text_in_list = almost_result.split()
                 for word in text_in_list:
                     if ('http' in word) or ('+7' in word):
