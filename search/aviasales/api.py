@@ -2,7 +2,7 @@ from __future__ import annotations
 import requests
 import functools
 import asyncio as aio
-from typing import Any, cast
+from typing import Any, Final, cast
 
 from .browser import AviasalesBrowserAuth
 from .data_types import SearchParams, SearchResults
@@ -18,8 +18,8 @@ class AviasalesAPIError(Exception):
     pass
 
 class AviasalesAPI:
-    AVIASALES_DOMAIN = "aviasales.ru"
-    SEARCH_START_ENDPOINT = f"https://tickets-api.{AVIASALES_DOMAIN}/search/v2/start"
+    AVIASALES_DOMAIN: Final = "aviasales.ru"
+    SEARCH_START_ENDPOINT: Final = f"https://tickets-api.{AVIASALES_DOMAIN}/search/v2/start"
 
     @staticmethod
     async def raw_request(endpoint: str, token: str, body: Any) -> requests.Response:
@@ -74,7 +74,7 @@ class AviasalesAPI:
         return SearchAPI(self, res, language)
 
 class SearchAPI:
-    SEARCH_RESULTS_ENDPOINT_PATTERN = "https://{}/search/v3/results"
+    SEARCH_RESULTS_ENDPOINT_PATTERN: Final = "https://{}/search/v3/results"
 
     def __init__(self, api: AviasalesAPI, res: Any, language: str):
         self._api = api
@@ -94,9 +94,11 @@ class SearchAPI:
                 res = await self._api.request(endpoint, body)
 
         try:
-            return cast(SearchResults, self._prepare_data(res))
+            tickets_data = self._prepare_data(res)
         except Exception as error:
             raise AviasalesAPIError("Failed to prepare response data") from error
+
+        return cast(SearchResults, tickets_data)
 
     def _is_search_done(self, res: Any) -> bool:
         if not res:
@@ -152,11 +154,16 @@ class SearchAPI:
 
         price_with_baggage = None
         proposals_with_baggage = [proposal for proposal in proposals if check_for_baggage(proposal)]
+
         if proposals_with_baggage:
             cheapest_proposal_with_baggage = proposals_with_baggage[0]
             price_with_baggage = cheapest_proposal_with_baggage["price"]["value"]
 
-        price_data = {"default": default_price, "with_baggage": price_with_baggage, "currency_code": currency_code}
+        price_data = {
+            "default": default_price,
+            "with_baggage": price_with_baggage,
+            "currency_code": currency_code,
+        }
 
         ticket_metadata = {
             "tags": tags_data,
