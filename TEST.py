@@ -1,11 +1,11 @@
 from time import time
-from random import randint,shuffle
+from random import randint,shuffle,choice
 from datetime import date
 RussianSymbols = 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'
 OtherSymbols = '.,!? '
 original_file = 'TEST.txt'
 edit_file = 'example.txt'
-CitiesFrom = ['Екатеринбурга']
+CitiesFrom = ['Екатеринбурга'] #Добавить городов
 StartSinceCity = [
     'Хочу поехать',
     'Хочу заселиться',
@@ -84,37 +84,51 @@ Country_Cities = {'Камбоджу': ['Сиемреап'],
 'Латвию':['Ригу'],
 'Австрию':['Зальцбург'],
 'Словению':['Люблян']}
+def new_d_m(first_year = 2024):
+    '''
+    Создание дня,месяца,года и возвращение их значений
+    '''
+    monthwithoutfebruary = [1,3,4,5,6,7,8,9,10,11,12]
+    year = randint(first_year,2026)
+    day = randint(1,30) 
+    if day > 28:      #Если это не февраль то выбираем любой оставшийся месяц
+        month = choice(monthwithoutfebruary)
+    else:                 #Если же февраль возможен то выбираем любой месяц без ограничений
+        month = randint(1,12)
+    return day,month,year
 class Data:
-    def __init__(self) -> None:
-        self.year_1 = randint(2021,2025)
-        self.month = randint(1,12)
-        self.day = randint(1,28)
-        self.year_2 = randint(self.year_1,2025)
-        self.month_2 = randint(1,12)
-        self.day_2 = randint(1,28)
-    def create_data(self):    
+    month_list = [' января', ' февраля', ' марта', ' апреля', ' мая', ' июня', ' июля', ' августа', ' сентября', ' октября', ' ноября', ' декабря']
+    @classmethod
+    def day_mon_yea(cls):
+        '''
+        Создание 2 дат (начало - конец) отпуска
+        '''
+        cls.day,cls.month,cls.year_1 = new_d_m()
+        cls.day_2,cls.month_2,cls.year_2 = new_d_m(cls.year_1)
+        return cls.day,cls.month,cls.year_1,cls.day_2,cls.month_2,cls.year_2
+    def __init__(self):
+        self.day,self.month,self.year_1,self.day_2,self.month_2,self.year_2 = Data.day_mon_yea()
+    def create_data(self):
+        '''
+        Редактирование дат начала и конца отпуска до реальных дат(конец позже выезда и отпуск не больше 50 дней)
+        '''    
         while not (5 < (date(self.year_2, self.month_2, self.day_2) - date(self.year_1, self.month, self.day)).days < 50):
-            self.year_1 = randint(2021,2025)
-            self.month = randint(1,12)
-            self.day = randint(1,28)
-            self.year_2 = randint(self.year_1,2025)
-            self.month_2 = randint(1,12)
-            self.day_2 = randint(1,28)
-        day_1 = str(self.day).rjust(2,'0')
-        month_1 = f".{str(self.month).rjust(2,'0')}"
-        year_1 = f".{str(self.year_1)}"
-        day_2 = str(self.day_2).rjust(2,'0')
-        month_2 = f".{str(self.month_2).rjust(2,'0')}"
-        year_2 = f".{str(self.year_2)}"
+            self.day,self.month,self.year_1,self.day_2,self.month_2,self.year_2 = Data.day_mon_yea()
         count_days = (date(self.year_2, self.month_2, self.day_2) - date(self.year_1, self.month, self.day)).days
         if randint(0,1):
-            month_1 = ''
+            month_1 = Data.month_list[int(self.month)]
+            month_2 = Data.month_list[int(self.month_2)]
             year_1 = ''
-            count_days = False
-        if randint(0,1):
-            month_2 = ''
             year_2 = ''
-            count_days = False
+            day_1 = str(self.day)
+            day_2 = str(self.day_2)
+        else:
+            day_1 = f"{self.day:02d}"
+            month_1 = f".{self.month:02d}"
+            year_1 = f".{self.year_1}"
+            day_2 = f"{self.day_2:02d}"
+            month_2 = f".{self.month_2:02d}"
+            year_2 = f".{self.year_2}"
         first_data = day_1 + month_1 + year_1
         second_data = day_2 + month_2 + year_2  
         return first_data,second_data,count_days
@@ -274,7 +288,9 @@ if __name__ == '__main__':
             unsorted_file = file.readlines()
             shuffle(unsorted_file)
             file1.writelines(unsorted_file)"""
-    with open('Done.txt','r',encoding='UTF-8') as file:
-        with open('example')
+    # with open('Done.txt','r',encoding='UTF-8') as file:
+    #     with open('example')
+    data = Data()
+    print(data.create_data())
     t2 = time()
     print(f'{round(t2-t1,6)*1000} мс\nГотово!')
