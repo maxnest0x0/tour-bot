@@ -5,7 +5,7 @@ RussianSymbols = 'абвгдеёжзийклмнопрстуфхцчшщъыьэ
 OtherSymbols = '.,!? '
 original_file = 'TEST.txt'
 edit_file = 'example.txt'
-CitiesFrom = ['Екатеринбурга'] #Добавить городов
+CitiesFrom = ['Екатеринбурга','Челябинска','Сургута','Владивостока','Краснодара','Сарапула','Москвы','Нижнего Тагила','Новоуральска']
 StartSinceCity = [
     'Хочу поехать',
     'Хочу заселиться',
@@ -140,13 +140,13 @@ class humans:
             baby = ''
         else:
             a = randint(0,1)
-            list = ['с 1 малышом ','и один малыш ']
+            list = ['с 1 малышом ','и одним малышом ']
             baby = list[a]
         if self.count_child == 0:
             child = ''
         elif self.count_child == 1:
             a = randint(0,1)
-            list = ['с 1 ребенком ','и один ребенок ']
+            list = ['с 1 ребенком ','и одним ребенком ']
             child = list[a]
         elif self.count_child == 2:
             a = randint(0,2)
@@ -234,18 +234,18 @@ if __name__ == '__main__':
     #                             human = humans()
     #                             first_data,second_data,countdays = data.create_data()
     #                             family,count_adult,count_child,count_baby = human.create_family()
-    #                             string1 = f'{start} в {country} в {city} из {fromcity} с {first_data} до {second_data} c {family}'
-    #                             tags1 = f'Страна:{country},куда:{city},откуда:{fromcity},датаначала:{first_data},датаконца:{second_data},взрослые:{count_adult},дети:{count_child},малыши:{count_baby}'
+    #                             string1 = f'{start} в {city} из {fromcity} {first_data} до {second_data} c {family}'
+    #                             tags1 = f'куда:{city},откуда:{fromcity},датаначала:{first_data},датаконца:{second_data},взрослые:{count_adult},дети:{count_child},малыши:{count_baby}'
                                 
     #                             first_data,second_data,countdays = data.create_data()
     #                             family,count_adult,count_child,count_baby = human.create_family()
-    #                             string2 = f'{start} в {city} в {country} из {fromcity} с {first_data} до {second_data} c {family}'
-    #                             tags2 = f'Страна:{country},куда:{city},откуда:{fromcity},датаначала:{first_data},датаконца:{second_data},взрослые:{count_adult},дети:{count_child},малыши:{count_baby}'
+    #                             string2 = f'{start} в {city} из {fromcity} с {first_data} по {second_data} c {family}'
+    #                             tags2 = f'куда:{city},откуда:{fromcity},датаначала:{first_data},датаконца:{second_data},взрослые:{count_adult},дети:{count_child},малыши:{count_baby}'
                                 
     #                             first_data,second_data,countdays = data.create_data()
     #                             family,count_adult,count_child,count_baby = human.create_family()
     #                             string3 = f'{start} в {city} из {fromcity} с {first_data} до {second_data} c {family}'
-    #                             tags3 = f'Страна:{0},куда:{city},откуда:{fromcity},датаначала:{first_data},датаконца:{second_data},взрослые:{count_adult},дети:{count_child},малыши:{count_baby}'
+    #                             tags3 = f'куда:{city},откуда:{fromcity},датаначала:{first_data},датаконца:{second_data},взрослые:{count_adult},дети:{count_child},малыши:{count_baby}'
 
     #                             file.write(f"{string1}\n")
     #                             file.write(f"{string2}\n")
@@ -265,18 +265,18 @@ if __name__ == '__main__':
                                 
                                 first_data,second_data,countdays = data.create_data()
                                 family,count_adult,count_child,count_baby = human.create_family()
-                                string1 = f'{start} {first_data} до {second_data} из {fromcity} в {city} в {country} с {family}'
-                                tags1 = f'Страна:{country},куда:{city},откуда:{fromcity},датаначала:{first_data},датаконца:{second_data},взрослые:{count_adult},дети:{count_child},малыши:{count_baby}'
+                                string1 = f'{start} {first_data} до {second_data} из {fromcity} в {country} с {family}'
+                                tags1 = f'куда:{city},откуда:{fromcity},датаначала:{first_data},датаконца:{second_data},взрослые:{count_adult},дети:{count_child},малыши:{count_baby}'
                                 
                                 first_data,second_data,countdays = data.create_data()
                                 family,count_adult,count_child,count_baby = human.create_family()
-                                string2 = f'{start} с {first_data} по {second_data} в {city} в {country} из {fromcity} с {family}'
-                                tags2 = f'Страна:{country},куда:{city},откуда:{fromcity},датаначала:{first_data},датаконца:{second_data},взрослые:{count_adult},дети:{count_child},малыши:{count_baby}'
+                                string2 = f'{start} с {first_data} по {second_data} в {country} из {fromcity} с {family}'
+                                tags2 = f'куда:{city},откуда:{fromcity},датаначала:{first_data},датаконца:{second_data},взрослые:{count_adult},дети:{count_child},малыши:{count_baby}'
                                 
                                 first_data,second_data,countdays = data.create_data()
                                 family,count_adult,count_child,count_baby = human.create_family()
-                                string3 = f'{start} с {first_data} до {second_data} в {country} в {city} из {fromcity} с {family}'
-                                tags3 = f'Страна:{country},куда:{city},откуда:{fromcity},датаначала:{first_data},датаконца:{second_data},взрослые:{count_adult},дети:{count_child},малыши:{count_baby}'
+                                string3 = f'{start} с {first_data} до {second_data} в {country} из {fromcity} с {family}'
+                                tags3 = f'куда:{city},откуда:{fromcity},датаначала:{first_data},датаконца:{second_data},взрослые:{count_adult},дети:{count_child},малыши:{count_baby}'
                                 
                                 file.write(f"{string1}\n")
                                 file.write(f"{string2}\n")
@@ -287,14 +287,7 @@ if __name__ == '__main__':
     #DeleteOtherSymbols(original_file,edit_file)    #~30 мс
     #StringCounts(original_file,edit_file)       #~10мс
     #get_all_words(edit_file)
-    """with open('Done.txt','r',encoding='UTF-8') as file:
-        with open('example.txt','w',encoding='UTF-8') as file1:
-            unsorted_file = file.readlines()
-            shuffle(unsorted_file)
-            file1.writelines(unsorted_file)"""
     # with open('Done.txt','r',encoding='UTF-8') as file:
     #     with open('example')
-    data = Data()
-    print(data.create_data())
     t2 = time()
     print(f'{round(t2-t1,6)*1000} мс\nГотово!')
