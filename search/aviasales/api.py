@@ -32,13 +32,31 @@ class AviasalesAPI:
 
         return await arequest("POST", endpoint, headers=headers, json=body)
 
+    @staticmethod
+    def process_response(r: requests.Response) -> Any:
+        if r.status_code == requests.codes.forbidden:
+            raise AviasalesAPIError("Auth error")
+
+        try:
+            r.raise_for_status()
+        except requests.HTTPError as error:
+            raise AviasalesAPIError("Bad HTTP status") from error
+
+        try:
+            res = r.json()
+        except requests.JSONDecodeError as error:
+            raise AviasalesAPIError("Invalid JSON") from error
+
+        return res
+
     @classmethod
     async def suggest_places(cls, text: str, limit: int, place_types: Iterable[str]=("airport", "city", "country")) -> list[SuggestedPlace]:
         body = [("term", text), ("max", limit)]
         for place_type in place_types:
             body.append(("types[]", place_type))
 
-        res = (await arequest("GET", cls.SUGGEST_PLACES_ENDPOINT, params=body)).json()
+        r = await arequest("GET", cls.SUGGEST_PLACES_ENDPOINT, params=body)
+        res = cls.process_response(r)
 
         places_data = []
         for place in res:
@@ -64,20 +82,7 @@ class AviasalesAPI:
             self.update_token()
             r = await self.raw_request(endpoint, self.token, body)
 
-        if r.status_code == requests.codes.forbidden:
-            raise AviasalesAPIError("Auth error")
-
-        try:
-            r.raise_for_status()
-        except requests.HTTPError as error:
-            raise AviasalesAPIError("Bad HTTP status") from error
-
-        try:
-            res = r.json()
-        except requests.JSONDecodeError as error:
-            raise AviasalesAPIError("Invalid JSON") from error
-
-        return res
+        return self.process_response(r)
 
     async def search_start(self, search_params: SearchParams, *, market_code: str="ru", currency_code: str="RUB", language: str="ru") -> SearchAPI:
         body = {
