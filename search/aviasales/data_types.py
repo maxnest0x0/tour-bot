@@ -62,3 +62,10 @@ class Ticket(TypedDict):
 
 class SearchResults(TypedDict):
     tickets: list[Ticket]
+
+PlaceType = Literal["airport", "city", "country"]
+
+class SuggestedPlace(TypedDict):
+    type: PlaceType
+    code: str
+    name: str

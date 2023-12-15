@@ -2,10 +2,10 @@ from __future__ import annotations
 import requests
 import functools
 import asyncio as aio
-from typing import Any, Final, cast
+from typing import Any, Final, Iterable, cast
 
 from .browser import AviasalesBrowserAuth
-from .data_types import SearchParams, SearchResults
+from .data_types import SearchParams, SearchResults, SuggestedPlace
 
 @functools.wraps(requests.request)
 async def arequest(*args: Any, **kwargs: Any) -> requests.Response:
@@ -20,6 +20,7 @@ class AviasalesAPIError(Exception):
 class AviasalesAPI:
     AVIASALES_DOMAIN: Final = "aviasales.ru"
     SEARCH_START_ENDPOINT: Final = f"https://tickets-api.{AVIASALES_DOMAIN}/search/v2/start"
+    SUGGEST_PLACES_ENDPOINT: Final = f"https://suggest.{AVIASALES_DOMAIN}/v2/places.json"
 
     @staticmethod
     async def raw_request(endpoint: str, token: str, body: Any) -> requests.Response:
@@ -30,6 +31,24 @@ class AviasalesAPI:
         }
 
         return await arequest("POST", endpoint, headers=headers, json=body)
+
+    @classmethod
+    async def suggest_places(cls, text: str, limit: int, place_types: Iterable[str]=("airport", "city", "country")) -> list[SuggestedPlace]:
+        body = [("term", text), ("max", limit)]
+        for place_type in place_types:
+            body.append(("types[]", place_type))
+
+        res = (await arequest("GET", cls.SUGGEST_PLACES_ENDPOINT, params=body)).json()
+
+        places_data = []
+        for place in res:
+            places_data.append({
+                "type": place["type"],
+                "code": place["code"],
+                "name": place["name"],
+            })
+
+        return cast(list[SuggestedPlace], places_data)
 
     def __init__(self) -> None:
         self._browser = AviasalesBrowserAuth()
