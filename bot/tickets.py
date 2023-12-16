@@ -76,10 +76,7 @@ class TicketsSearch:
                     arrival_data = [str(getattr(arrival, attr)).rjust(2, "0") for attr in ("day", "month", "year", "hour", "minute")]
                     arrival_text = f"{arrival_data[0]}.{arrival_data[1]}.{arrival_data[2]} {arrival_data[3]}:{arrival_data[4]}"
 
-                    if segment_index == 0:
-                        ticket_text.append(f"{origin_text} ({departure_text}) → {destination_text} ({arrival_text})")
-                    else:
-                        ticket_text.append(f"{destination_text} ({arrival_text}) ← {origin_text} ({departure_text})")
+                    ticket_text.append(f"{origin_text} ({departure_text}) → {destination_text} ({arrival_text})")
 
                 segment_index += 1
 
