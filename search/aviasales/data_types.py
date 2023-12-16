@@ -55,6 +55,7 @@ class Segment(TypedDict):
     flights: list[Flight]
 
 class Ticket(TypedDict):
+    id: str
     tags: list[str]
     badge: Optional[Badge]
     price: Price

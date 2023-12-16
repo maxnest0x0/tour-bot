@@ -29,7 +29,7 @@ class TicketsSearch:
         res = await search.search_results(3)
         return res
 
-    def make_text(self, res):
+    async def make_text(self, res):
         tickets = res["tickets"]
         if not tickets:
             return Text.no_tickets_found()
@@ -82,6 +82,9 @@ class TicketsSearch:
                         ticket_text.append(f"{destination_text} ({arrival_text}) ← {origin_text} ({departure_text})")
 
                 segment_index += 1
+
+            ticket_url = await self.api.shorten_url(self.api.get_ticket_url(ticket))
+            ticket_text.append(ticket_url)
 
             text.append("\n".join(ticket_text))
 

@@ -58,7 +58,7 @@ class Dialog:
         await self.edit(Text.searching())
         try:
             res = await self.search.search(self.state)
-            text = self.search.make_text(res)
+            text = await self.search.make_text(res)
         except Exception as error:
             await self.edit(Text.unknown_error())
             raise error

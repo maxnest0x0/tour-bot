@@ -5,7 +5,7 @@ import asyncio as aio
 from typing import Any, Final, Iterable, cast
 
 from .browser import AviasalesBrowserAuth
-from .data_types import SearchParams, SearchResults, SuggestedPlace
+from .data_types import SearchParams, SearchResults, SuggestedPlace, Ticket
 
 @functools.wraps(requests.request)
 async def arequest(*args: Any, **kwargs: Any) -> requests.Response:
@@ -21,6 +21,7 @@ class AviasalesAPI:
     AVIASALES_DOMAIN: Final = "aviasales.ru"
     SEARCH_START_ENDPOINT: Final = f"https://tickets-api.{AVIASALES_DOMAIN}/search/v2/start"
     SUGGEST_PLACES_ENDPOINT: Final = f"https://suggest.{AVIASALES_DOMAIN}/v2/places.json"
+    SHORTEN_URL_ENDPOINT: Final = f"https://www.{AVIASALES_DOMAIN}/shorten"
 
     @staticmethod
     async def raw_request(endpoint: str, token: str, body: Any) -> requests.Response:
@@ -50,6 +51,30 @@ class AviasalesAPI:
         return res
 
     @classmethod
+    def get_ticket_url(cls, ticket: Ticket) -> str:
+        search_page_code = ""
+
+        first_flight = ticket["segments"][0]["flights"][0]
+        search_page_code += first_flight["origin"]["city"]["code"]
+
+        first_departure = first_flight["departure"]["local_datetime"]
+        search_page_code += first_departure[8:10] + first_departure[5:7]
+
+        last_flight = ticket["segments"][0]["flights"][-1]
+        search_page_code += last_flight["destination"]["city"]["code"]
+
+        if len(ticket["segments"]) == 2:
+            last_departure = ticket["segments"][1]["flights"][0]["departure"]["local_datetime"]
+            search_page_code += last_departure[8:10] + last_departure[5:7]
+
+        search_page_code += "1"
+
+        ticket_code = "0" * 30 + "a_" + ticket["id"] + "_" + str(ticket["price"]["default"])
+
+        ticket_url = f"https://www.{cls.AVIASALES_DOMAIN}/search/{search_page_code}?t={ticket_code}"
+        return ticket_url
+
+    @classmethod
     async def suggest_places(cls, text: str, limit: int, place_types: Iterable[str]=("airport", "city", "country")) -> list[SuggestedPlace]:
         body = [("term", text), ("max", limit)]
         for place_type in place_types:
@@ -67,6 +92,16 @@ class AviasalesAPI:
             })
 
         return cast(list[SuggestedPlace], places_data)
+
+    @classmethod
+    async def shorten_url(cls, url: str) -> str:
+        body = {"url": url}
+
+        r = await arequest("GET", cls.SHORTEN_URL_ENDPOINT, params=body)
+        res = cls.process_response(r)
+
+        short_url = res["shorturl"]
+        return cast(str, short_url)
 
     def __init__(self) -> None:
         self._browser = AviasalesBrowserAuth()
@@ -157,6 +192,7 @@ class SearchAPI:
         return tickets_data
 
     def _prepare_ticket_metadata(self, ticket: Any) -> Any:
+        id_data = ticket["id"]
         tags_data = ticket["tags"]
 
         badge_data = None
@@ -190,6 +226,7 @@ class SearchAPI:
         }
 
         ticket_metadata = {
+            "id": id_data,
             "tags": tags_data,
             "badge": badge_data,
             "price": price_data,
