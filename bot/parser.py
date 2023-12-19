@@ -50,7 +50,7 @@ class Parser:
 
         if state["origin"] is not None and state["destination"] is not None:
             if state["origin"] == state["destination"]:
-                raise CityParserError("Origin and destanition city are the same")
+                raise CityParserError("Origin and destination city are the same")
 
         if state["start"] is not None:
             if state["start"] < today:
