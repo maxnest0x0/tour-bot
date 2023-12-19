@@ -1,3 +1,5 @@
+import datetime as dt
+
 class Text:
     KEYS = {
         "origin": "Город отправления",
@@ -39,6 +41,33 @@ class Text:
         p2 = "Может быть вам подойдёт другая дата или другой город?"
 
         return "\n".join((p1, p2))
+
+    @staticmethod
+    def date(date):
+        day = str(date.day).rjust(2, "0")
+        month = str(date.month).rjust(2, "0")
+        year = str(date.year)
+
+        return f"{day}.{month}.{year}"
+
+    @classmethod
+    def current_state(cls, state):
+        p1 = "Сейчас ваш запрос выглядит так:"
+
+        text = []
+        for key, value in state.items():
+            key_text = cls.KEYS[key]
+
+            if value is None:
+                value_text = "?"
+            elif isinstance(value, dt.date):
+                value_text = cls.date(value)
+            else:
+                value_text = value["name"]
+
+            text.append(f"{key_text}: {value_text}")
+
+        return "\n".join((p1, *text))
 
     @classmethod
     def missing_keys(cls, keys):
