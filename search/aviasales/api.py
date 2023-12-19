@@ -2,7 +2,7 @@ from __future__ import annotations
 import requests
 import functools
 import asyncio as aio
-from typing import Any, Final, Iterable, cast
+from typing import Any, Final, Iterable, Optional, cast
 
 from .browser import AviasalesBrowserAuth
 from .data_types import SearchParams, SearchResults, SuggestedPlace, Ticket
@@ -141,16 +141,17 @@ class SearchAPI:
         self._results_domain = res["results_url"]
         self._language = language
 
-    async def search_results(self, ticket_limit: int, *, wait_until_done: bool=True, wait_time: float=2) -> SearchResults:
+    async def search_results(self, ticket_limit: int, wait_max_retries: Optional[int]=None, wait_time: float=2) -> SearchResults:
         body = {"limit": ticket_limit, "search_id": self._search_id}
 
         endpoint = self.SEARCH_RESULTS_ENDPOINT_PATTERN.format(self._results_domain)
         res = await self._api.request(endpoint, body)
 
-        if wait_until_done:
-            while not self._is_search_done(res):
-                await aio.sleep(wait_time)
-                res = await self._api.request(endpoint, body)
+        wait_retries = 0
+        while not self._is_search_done(res) and (wait_max_retries is None or wait_retries < wait_max_retries):
+            wait_retries += 1
+            await aio.sleep(wait_time)
+            res = await self._api.request(endpoint, body)
 
         try:
             tickets_data = self._prepare_data(res)

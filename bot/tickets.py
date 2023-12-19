@@ -26,7 +26,7 @@ class TicketsSearch:
             "trip_class": "Y",
         })
 
-        res = await search.search_results(3)
+        res = await search.search_results(3, 3)
         return res
 
     async def make_text(self, res):
