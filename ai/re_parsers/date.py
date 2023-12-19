@@ -163,6 +163,7 @@ class DateParser:
 
         month = None
         if month_text is not None:
+            month_text = month_text.lower()
             if month_text in self.MONTHS:
                 month = self.MONTHS.index(month_text) + 1
             else:
