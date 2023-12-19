@@ -78,7 +78,7 @@ class CityParser:
 
         for preposition_type, name in phrases:
             try:
-                places = await AviasalesAPI.suggest_places(name, 1)
+                places = await AviasalesAPI.suggest_places(name, 2)
             except AviasalesAPIError:
                 continue
 
