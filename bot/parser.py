@@ -47,6 +47,7 @@ class Parser:
 
     def _validate_state(self, state):
         today = dt.datetime.now(dt.timezone(dt.timedelta(hours=5))).date()
+        max_date = today + dt.timedelta(365)
 
         if state["origin"] is not None and state["destination"] is not None:
             if state["origin"] == state["destination"]:
@@ -56,9 +57,15 @@ class Parser:
             if state["start"] < today:
                 raise DateParserError("Start date is in the past")
 
+            if state["start"] >= max_date:
+                raise DateParserError("Start date is too far in the future")
+
         if state["end"] is not None:
             if state["end"] < today:
                 raise DateParserError("End date is in the past")
+
+            if state["end"] >= max_date:
+                raise DateParserError("End date is too far in the future")
 
         if state["start"] is not None and state["end"] is not None:
             if state["end"] < state["start"]:
