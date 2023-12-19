@@ -26,6 +26,10 @@ class Text:
         return "\n".join((p1, p2))
 
     @staticmethod
+    def busy():
+        return "Пожалуйста, подождите, пока я работаю с предыдущим запросом."
+
+    @staticmethod
     def tickets_found():
         return "Вот что мне удалось найти:"
 

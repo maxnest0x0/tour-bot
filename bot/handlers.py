@@ -25,4 +25,12 @@ class Handlers:
 
         dialog = self.bot.dialogs[chat_id]
         dialog.active()
-        await dialog.process_text(update.message.text)
+
+        if dialog.message is None:
+            try:
+                await dialog.process_text(update.message.text)
+            except Exception as error:
+                dialog.message = None
+                raise error
+        else:
+            await dialog.send(Text.busy())
