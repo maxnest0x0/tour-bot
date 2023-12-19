@@ -49,11 +49,11 @@ class DateParser:
 
         self._date_regexs = [re.compile(regex, re.I) for regex in date_regexs]
 
-    def parse(self, text):
+    def parse(self, text, state):
         matches = self._find_dates(text)
         phrases = self._find_prepositions(matches, text)
         date_phrases = self._process_dates(phrases)
-        res = self._decide_result(date_phrases)
+        res = self._decide_result(date_phrases, state)
 
         return res
 
@@ -105,7 +105,7 @@ class DateParser:
 
         return date_phrases
 
-    def _decide_result(self, date_phrases):
+    def _decide_result(self, date_phrases, state):
         if len(date_phrases) > 2:
             raise DateParserError("Too many dates found")
 
@@ -136,10 +136,16 @@ class DateParser:
         if len(dates_without_preposition) == 1:
             date = dates_without_preposition[0]
 
-            if res["start"] is None:
-                res["start"] = date
-            elif res["end"] is None:
+            if res["start"] is not None:
                 res["end"] = date
+            elif res["end"] is not None:
+                res["start"] = date
+            elif state["start"] is not None:
+                res["end"] = date
+            elif state["end"] is not None:
+                res["start"] = date
+            else:
+                res["start"] = date
 
         return res
 

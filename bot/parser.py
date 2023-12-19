@@ -25,7 +25,7 @@ class Parser:
         text = re.sub(r"\s+", " ", text)
 
         city_res = await self.city_parser.parse(text, state)
-        date_res = self.date_parser.parse(text)
+        date_res = self.date_parser.parse(text, state)
 
         city_update = {key: value for key, value in city_res.items() if value is not None}
         date_update = {key: value for key, value in date_res.items() if value is not None}
