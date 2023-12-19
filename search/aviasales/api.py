@@ -186,6 +186,9 @@ class SearchAPI:
             ticket_metadata = self._prepare_ticket_metadata(ticket)
             complex_ticket_data = self._prepare_complex_ticket_data(ticket)
 
+            if complex_ticket_data is None:
+                continue
+
             ticket_data = {**ticket_metadata, **complex_ticket_data}
             tickets_data["tickets"].append(ticket_data)
 
@@ -253,7 +256,11 @@ class SearchAPI:
 
                 number = flight_term["marketing_carrier_designator"]["number"]
                 check_for_number = lambda flight_leg: flight_leg["operating_carrier_designator"]["number"] == number
-                flight_leg = [flight_leg for flight_leg in self._flight_legs if check_for_number(flight_leg)][0]
+                flight_legs = [flight_leg for flight_leg in self._flight_legs if check_for_number(flight_leg)]
+
+                if not flight_legs:
+                    return None
+                flight_leg = flight_legs[0]
 
                 origin_data = self._prepare_place_data(flight_leg["origin"])
                 destination_data = self._prepare_place_data(flight_leg["destination"])
