@@ -68,13 +68,8 @@ class TicketsSearch:
                     if destination["city"]["name"] != destination["airport"]["name"]:
                         destination_text += ", " + destination["airport"]["name"]
 
-                    departure = dt.datetime.fromisoformat(flight["departure"]["local_datetime"])
-                    departure_data = [str(getattr(departure, attr)).rjust(2, "0") for attr in ("day", "month", "year", "hour", "minute")]
-                    departure_text = f"{departure_data[0]}.{departure_data[1]}.{departure_data[2]} {departure_data[3]}:{departure_data[4]}"
-
-                    arrival = dt.datetime.fromisoformat(flight["arrival"]["local_datetime"])
-                    arrival_data = [str(getattr(arrival, attr)).rjust(2, "0") for attr in ("day", "month", "year", "hour", "minute")]
-                    arrival_text = f"{arrival_data[0]}.{arrival_data[1]}.{arrival_data[2]} {arrival_data[3]}:{arrival_data[4]}"
+                    departure_text = Text.datetime(dt.datetime.fromisoformat(flight["departure"]["local_datetime"]))
+                    arrival_text = Text.datetime(dt.datetime.fromisoformat(flight["arrival"]["local_datetime"]))
 
                     ticket_text.append(f"{origin_text} ({departure_text}) → {destination_text} ({arrival_text})")
 

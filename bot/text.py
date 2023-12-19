@@ -50,6 +50,17 @@ class Text:
 
         return f"{day}.{month}.{year}"
 
+    @staticmethod
+    def datetime(datetime):
+        day = str(datetime.day).rjust(2, "0")
+        month = str(datetime.month).rjust(2, "0")
+        year = str(datetime.year)
+
+        hour = str(datetime.hour).rjust(2, "0")
+        minute = str(datetime.minute).rjust(2, "0")
+
+        return f"{day}.{month}.{year} {hour}:{minute}"
+
     @classmethod
     def current_state(cls, state):
         p1 = "Сейчас ваш запрос выглядит так:"
