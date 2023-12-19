@@ -8,15 +8,15 @@ class TicketsSearch:
 
     async def search(self, state):
         directions = [{
-            "origin": state["origin"],
-            "destination": state["destination"],
+            "origin": state["origin"]["code"],
+            "destination": state["destination"]["code"],
             "date": state["start"].isoformat(),
         }]
 
         if state["end"] is not None:
             directions.append({
-                "origin": state["destination"],
-                "destination": state["origin"],
+                "origin": state["destination"]["code"],
+                "destination": state["origin"]["code"],
                 "date": state["end"].isoformat(),
             })
 

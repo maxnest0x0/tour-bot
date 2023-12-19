@@ -24,7 +24,7 @@ class Parser:
         text = text.strip()
         text = re.sub(r"\s+", " ", text)
 
-        city_res = await self.city_parser.parse(text)
+        city_res = await self.city_parser.parse(text, state)
         date_res = self.date_parser.parse(text)
 
         city_update = {key: value for key, value in city_res.items() if value is not None}
@@ -50,7 +50,7 @@ class Parser:
         max_date = today + dt.timedelta(365)
 
         if state["origin"] is not None and state["destination"] is not None:
-            if state["origin"] == state["destination"]:
+            if state["origin"]["code"] == state["destination"]["code"]:
                 raise CityParserError("Origin and destination city are the same")
 
         if state["start"] is not None:

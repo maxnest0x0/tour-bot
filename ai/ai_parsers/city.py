@@ -18,12 +18,12 @@ class CityParser:
     def __init__(self, model_name="ru_core_news_sm"):
         self._model = spacy.load(model_name)
 
-    async def parse(self, text):
+    async def parse(self, text, state):
         prepared_text = self._prepare_text(text)
         ents = self._get_named_entities(prepared_text)
         phrases = self._find_prepositions(ents)
         city_phrases = await self._process_cities(phrases)
-        res = self._decide_result(city_phrases)
+        res = self._decide_result(city_phrases, state)
 
         return res
 
@@ -89,32 +89,32 @@ class CityParser:
             if place["type"] != "city":
                 continue
 
-            city_phrases.append((preposition_type, place["code"]))
+            city_phrases.append((preposition_type, place))
 
         return city_phrases
 
-    def _decide_result(self, city_phrases):
+    def _decide_result(self, city_phrases, state):
         if len(city_phrases) > 2:
             raise CityParserError("Too many cities found")
 
         res = {"origin": None, "destination": None}
         cities_without_preposition = []
 
-        for preposition_type, code in city_phrases:
+        for preposition_type, city in city_phrases:
             if preposition_type == PrepositionType.ORIGIN:
                 if res["origin"] is not None:
                     raise CityParserError("Several origin cities found")
 
-                res["origin"] = code
+                res["origin"] = city
 
             if preposition_type == PrepositionType.DESTINATION:
                 if res["destination"] is not None:
                     raise CityParserError("Several destination cities found")
 
-                res["destination"] = code
+                res["destination"] = city
 
             if preposition_type is None:
-                cities_without_preposition.append(code)
+                cities_without_preposition.append(city)
 
         if len(cities_without_preposition) == 2:
             origin, destination = cities_without_preposition
@@ -122,11 +122,17 @@ class CityParser:
             res["destination"] = destination
 
         if len(cities_without_preposition) == 1:
-            code = cities_without_preposition[0]
+            city = cities_without_preposition[0]
 
-            if res["destination"] is None:
-                res["destination"] = code
-            elif res["origin"] is None:
-                res["origin"] = code
+            if res["origin"] is not None:
+                res["destination"] = city
+            elif res["destination"] is not None:
+                res["origin"] = city
+            elif state["origin"] is not None:
+                res["destination"] = city
+            elif state["destination"] is not None:
+                res["origin"] = city
+            else:
+                res["destination"] = city
 
         return res
