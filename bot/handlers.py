@@ -27,6 +27,8 @@ class Handlers:
         dialog.active()
 
         if dialog.message is None:
+            dialog.message = True
+
             try:
                 await dialog.process_text(update.message.text)
             except Exception as error:
