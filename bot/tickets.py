@@ -67,8 +67,8 @@ class TicketsSearch:
                     ticket_text.append(Text.flight(origin, departure, destination, arrival))
 
             ticket_url = await self.api.shorten_url(self.api.get_ticket_url(ticket))
-            ticket_text.append(ticket_url)
+            ticket_text.append(Text.link(ticket_url))
 
             text.append("\n".join(ticket_text))
 
-        return "\n\n".join(text)
+        return Text.tickets_found() + "\n" + "\n\n".join(text)
