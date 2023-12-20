@@ -152,29 +152,33 @@ class Text:
         return emj(":prohibited: " + cls.tag("code", error))
 
     @staticmethod
-    def city_error():
+    def repeat_input():
+        return "Пожалуйста, попробуйте переформулировать запрос."
+
+    @classmethod
+    def city_error(cls):
         p1 = ":cityscape: Похоже, мне не удалось однозначно распознать название города/городов в вашем запросе!"
-        p2 = "Пожалуйста, попробуйте переформулировать запрос."
+        p2 = cls.repeat_input()
 
         return emj("\n".join((p1, p2)))
 
-    @staticmethod
-    def date_error():
+    @classmethod
+    def date_error(cls):
         p1 = ":calendar: Кажется, мне не удалось однозначно распознать дату/даты в вашем запросе!"
-        p2 = "Пожалуйста, попробуйте переформулировать запрос."
+        p2 = cls.repeat_input()
 
         return emj("\n".join((p1, p2)))
 
-    @staticmethod
-    def too_long_error():
+    @classmethod
+    def too_long_error(cls):
         p1 = ":exploding_head: Хмм, запрос слишком длинный и мне сложно понять его!"
-        p2 = "Пожалуйста, попробуйте переформулировать запрос."
+        p2 = cls.repeat_input()
 
         return emj("\n".join((p1, p2)))
 
     @staticmethod
     def unknown_error():
         p1 = ":face_screaming_in_fear: Ой, произошла неожиданная ошибка!"
-        p2 = "Не беспокойтесь, мы обязательно исправим её до защиты."
+        p2 = "Не беспокойтесь, мы скоро её исправим."
 
         return emj("\n".join((p1, p2)))
