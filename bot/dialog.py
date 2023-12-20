@@ -1,4 +1,5 @@
 import datetime as dt
+import telegram as tg
 
 from .parser import Parser, TooLongTextError, CityParserError, DateParserError
 from .tickets import TicketsSearch
@@ -68,15 +69,15 @@ class Dialog:
             self.reset_state()
             raise error
 
-        await self.edit(text, True)
+        await self.edit(text)
         self.message = None
         self.reset_state()
 
     async def send(self, text, save=False):
-        message = await self.chat.send_message(text)
+        message = await self.chat.send_message(text, tg.constants.ParseMode.HTML, True)
 
         if save:
             self.message = message
 
-    async def edit(self, text, no_preview=None):
-        await self.message.edit_text(text, disable_web_page_preview=no_preview)
+    async def edit(self, text):
+        await self.message.edit_text(text, tg.constants.ParseMode.HTML, True)

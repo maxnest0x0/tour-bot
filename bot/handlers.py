@@ -10,7 +10,7 @@ class Handlers:
 
     async def start(self, update: tg.Update, context: ext.ContextTypes.DEFAULT_TYPE):
         if update.message is not None:
-            await update.message.reply_text(Text.welcome())
+            await update.message.reply_text(Text.welcome(), tg.constants.ParseMode.HTML, True)
 
     async def message(self, update: tg.Update, context: ext.ContextTypes.DEFAULT_TYPE):
         chat_id = update.effective_chat.id
