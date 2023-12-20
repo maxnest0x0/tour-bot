@@ -68,7 +68,7 @@ class Dialog:
             self.reset_state()
             raise error
 
-        await self.edit(text)
+        await self.edit(text, True)
         self.message = None
         self.reset_state()
 
@@ -78,5 +78,5 @@ class Dialog:
         if save:
             self.message = message
 
-    async def edit(self, text):
-        await self.message.edit_text(text)
+    async def edit(self, text, no_preview=None):
+        await self.message.edit_text(text, disable_web_page_preview=no_preview)
