@@ -103,7 +103,7 @@ class Text:
 
     @classmethod
     def missing_keys(cls, keys):
-        p1 = ":red_question_mark: Для того, чтобы я смог выполнить поиск, мне необходимо знать следующую информацию:"
+        p1 = ":red_question_mark: Для того, чтобы выполнить поиск, мне необходимо знать следующую информацию:"
         p2 = cls.keys(cls.KEYS[key] for key in keys)
 
         return emj("\n".join((p1, p2)))

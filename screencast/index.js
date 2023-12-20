@@ -37,32 +37,35 @@ await sleep(2000)
 const box = await area.boundingBox()
 box.x += 1
 box.width -= 1
+
 const rec = await page.screencast({ crop: box, path: "screencast.webm" })
 
-await sleep(2000)
+await sleep(1000)
 await start.click()
 
 const input = await page.waitForSelector("#editable-message-text")
 await input.click()
 
 await sleep(2000)
-await type("Привет! Мне бы хотелось съездить в Нью-Йорк.")
+await type("Привет! Мне бы хотелось съездить в Лондон.")
 await waitForMessage("Сейчас ваш запрос выглядит так")
 
 await sleep(2000)
-await type("У меня там будет очень важная встреча 31 декабря.")
+await type("У меня там будет важная встреча вечером 31 декабря.")
 await waitForMessage("Сейчас ваш запрос выглядит так")
 
 await sleep(2000)
-await type("Мой город — Екатеринбург. А вернуться планирую где-то 8 числа.")
+await type("Сам я из Екб, а вернуться планирую где-то 8 числа.")
 await waitForMessage("Вот, что мне удалось найти")
 
 await sleep(2000)
-await scroll(-10, 70)
+await scroll(-10, 90)
 await sleep(500)
-await scroll(20, 40)
+await scroll(20, 50)
 
+await sleep(500)
 await type("Вот это я понимаю! Реально крутой бот.")
 
-await sleep(300)
+await sleep(350)
 await rec.stop()
+await browser.close()
