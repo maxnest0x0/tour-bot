@@ -39,10 +39,10 @@ class Dialog:
         try:
             await self.parser.parse(text, self.state)
         except CityParserError as error:
-            await self.edit(Text.city_error() + "\n> " + error.args[0])
+            await self.edit(Text.city_error() + "\n" + Text.error_text(str(error)))
             raise error
         except DateParserError as error:
-            await self.edit(Text.date_error() + "\n> " + error.args[0])
+            await self.edit(Text.date_error() + "\n" + Text.error_text(str(error)))
             raise error
         except TooLongTextError as error:
             await self.edit(Text.too_long_error())

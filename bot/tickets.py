@@ -40,40 +40,31 @@ class TicketsSearch:
 
             badge = ticket["badge"]
             if badge is not None:
-                ticket_text.append(badge["name"] + "!")
+                ticket_text.append(Text.badge(badge["name"]))
 
             price = ticket["price"]["default"]
-            ticket_text.append(f"Цена: {price} ₽")
+            ticket_text.append(Text.price(price))
 
             price_with_baggage = ticket["price"]["with_baggage"]
             if price_with_baggage is not None and price_with_baggage != price:
-                ticket_text.append(f"Цена с багажом: {price_with_baggage} ₽")
+                ticket_text.append(Text.price_with_baggage(price_with_baggage))
 
             segment_index = 0
-            for segment in ticket["segments"]:
+            for i, segment in enumerate(ticket["segments"]):
                 if len(ticket["segments"]) == 2:
-                    if segment_index == 0:
-                        ticket_text.append("Туда:")
+                    if i == 0:
+                        ticket_text.append(Text.to_there())
                     else:
-                        ticket_text.append("Обратно:")
+                        ticket_text.append(Text.from_there())
 
                 for flight in segment["flights"]:
-                    origin = flight["origin"]
-                    origin_text = origin["city"]["name"]
-                    if origin["city"]["name"] != origin["airport"]["name"]:
-                        origin_text += ", " + origin["airport"]["name"]
+                    origin = Text.place(flight["origin"])
+                    destination = Text.place(flight["destination"])
 
-                    destination = flight["destination"]
-                    destination_text = destination["city"]["name"]
-                    if destination["city"]["name"] != destination["airport"]["name"]:
-                        destination_text += ", " + destination["airport"]["name"]
+                    departure = Text.datetime(dt.datetime.fromisoformat(flight["departure"]["local_datetime"]))
+                    arrival = Text.datetime(dt.datetime.fromisoformat(flight["arrival"]["local_datetime"]))
 
-                    departure_text = Text.datetime(dt.datetime.fromisoformat(flight["departure"]["local_datetime"]))
-                    arrival_text = Text.datetime(dt.datetime.fromisoformat(flight["arrival"]["local_datetime"]))
-
-                    ticket_text.append(f"{origin_text} ({departure_text}) → {destination_text} ({arrival_text})")
-
-                segment_index += 1
+                    ticket_text.append(Text.flight(origin, departure, destination, arrival))
 
             ticket_url = await self.api.shorten_url(self.api.get_ticket_url(ticket))
             ticket_text.append(ticket_url)
