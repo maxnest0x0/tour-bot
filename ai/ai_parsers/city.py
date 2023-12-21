@@ -1,11 +1,22 @@
 import spacy
 from enum import Enum
+from typing import NamedTuple, Optional, Sequence
 
 from search.aviasales.api import AviasalesAPI, AviasalesAPIError
+from search.aviasales.data_types import SuggestedPlace
+from bot.data_types import ParamsState, ParamsStateUpdate
 
 class PrepositionType(Enum):
     ORIGIN = 1
     DESTINATION = 2
+
+class LocationWithPrepositionType(NamedTuple):
+    preposition_type: Optional[PrepositionType]
+    name: str
+
+class CityWithPrepositionType(NamedTuple):
+    preposition_type: Optional[PrepositionType]
+    city: SuggestedPlace
 
 class CityParserError(Exception):
     pass
@@ -15,10 +26,10 @@ class CityParser:
     ORIGIN_PREPOSITIONS = ["из", "с", "со", "от"]
     DESTINATION_PREPOSITIONS = ["в", "во", "на", "к", "до"]
 
-    def __init__(self, model_name="ru_core_news_sm"):
+    def __init__(self, model_name: str="ru_core_news_sm"):
         self._model = spacy.load(model_name)
 
-    async def parse(self, text, state):
+    async def parse(self, text: str, state: ParamsState) -> ParamsStateUpdate:
         prepared_text = self._prepare_text(text)
         ents = self._get_named_entities(prepared_text)
         locations_with_preposition_type = self._find_prepositions(ents)
@@ -27,7 +38,7 @@ class CityParser:
 
         return res
 
-    def _prepare_text(self, text):
+    def _prepare_text(self, text: str) -> str:
         max_len = max(len(word) for word in self.ORIGIN_PREPOSITIONS + self.DESTINATION_PREPOSITIONS)
         words = []
 
@@ -39,12 +50,12 @@ class CityParser:
 
         return " ".join(words)
 
-    def _get_named_entities(self, text):
+    def _get_named_entities(self, text: str) -> list[spacy.tokens.Span]:
         doc = self._model(text)
         ents = [ent for ent in doc.ents if ent.label_ in self.NER_LABELS]
         return ents
 
-    def _find_prepositions(self, ents):
+    def _find_prepositions(self, ents: Sequence[spacy.tokens.Span]) -> list[LocationWithPrepositionType]:
         locations_with_preposition_type = []
 
         for ent in ents:
@@ -59,11 +70,11 @@ class CityParser:
                 if preposition in self.DESTINATION_PREPOSITIONS:
                     preposition_type = PrepositionType.DESTINATION
 
-            locations_with_preposition_type.append((preposition_type, ent.text))
+            locations_with_preposition_type.append(LocationWithPrepositionType(preposition_type, ent.text))
 
         return locations_with_preposition_type
 
-    async def _process_cities(self, locations_with_preposition_type):
+    async def _process_cities(self, locations_with_preposition_type: Sequence[LocationWithPrepositionType]) -> list[CityWithPrepositionType]:
         cities_with_preposition_type = []
 
         for preposition_type, name in locations_with_preposition_type:
@@ -79,15 +90,15 @@ class CityParser:
             if place["type"] != "city":
                 continue
 
-            cities_with_preposition_type.append((preposition_type, place))
+            cities_with_preposition_type.append(CityWithPrepositionType(preposition_type, place))
 
         return cities_with_preposition_type
 
-    def _decide_result(self, cities_with_preposition_type, state):
+    def _decide_result(self, cities_with_preposition_type: Sequence[CityWithPrepositionType], state: ParamsState) -> ParamsStateUpdate:
         if len(cities_with_preposition_type) > 2:
             raise CityParserError("Too many cities found")
 
-        res = {"origin": None, "destination": None}
+        res: ParamsStateUpdate = {"origin": None, "destination": None}
         cities_without_preposition = []
 
         for preposition_type, city in cities_with_preposition_type:
