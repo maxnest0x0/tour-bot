@@ -51,9 +51,9 @@ class DateParser:
 
     def parse(self, text, state):
         matches = self._find_dates(text)
-        phrases = self._find_prepositions(matches, text)
-        date_phrases = self._process_dates(phrases)
-        res = self._decide_result(date_phrases, state)
+        matches_with_preposition_type = self._find_prepositions(matches, text)
+        dates_with_preposition_type = self._process_dates(matches_with_preposition_type)
+        res = self._decide_result(dates_with_preposition_type, state)
 
         return res
 
@@ -73,7 +73,7 @@ class DateParser:
         return matches
 
     def _find_prepositions(self, matches, text):
-        phrases = []
+        matches_with_preposition_type = []
 
         for m in matches:
             preposition_type = None
@@ -88,31 +88,31 @@ class DateParser:
                 if preposition in self.END_PREPOSITIONS:
                     preposition_type = PrepositionType.END
 
-            phrases.append((preposition_type, m))
+            matches_with_preposition_type.append((preposition_type, m))
 
-        return phrases
+        return matches_with_preposition_type
 
-    def _process_dates(self, phrases):
-        date_phrases = []
+    def _process_dates(self, matches_with_preposition_type):
+        dates_with_preposition_type = []
 
-        for preposition_type, m in phrases:
+        for preposition_type, m in matches_with_preposition_type:
             prepared_date = self._prepare_date(m)
             translated_date = self._translate_date(*prepared_date)
             predicted_date = self._predict_date(*translated_date)
             date = dt.date(*reversed(predicted_date))
 
-            date_phrases.append((preposition_type, date))
+            dates_with_preposition_type.append((preposition_type, date))
 
-        return date_phrases
+        return dates_with_preposition_type
 
-    def _decide_result(self, date_phrases, state):
-        if len(date_phrases) > 2:
+    def _decide_result(self, dates_with_preposition_type, state):
+        if len(dates_with_preposition_type) > 2:
             raise DateParserError("Too many dates found")
 
         res = {"start": None, "end": None}
         dates_without_preposition = []
 
-        for preposition_type, date in date_phrases:
+        for preposition_type, date in dates_with_preposition_type:
             if preposition_type == PrepositionType.START:
                 if res["start"] is not None:
                     raise DateParserError("Several start dates found")
