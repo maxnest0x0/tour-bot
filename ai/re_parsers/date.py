@@ -145,14 +145,14 @@ class DateParser:
         if len(dates_without_preposition) == 1:
             date = dates_without_preposition[0]
 
-            if res["start"] is not None:
-                res["end"] = date
-            elif res["end"] is not None:
+            if res["end"] is not None:
                 res["start"] = date
-            elif state["start"] is not None:
+            elif res["start"] is not None:
                 res["end"] = date
             elif state["end"] is not None:
                 res["start"] = date
+            elif state["start"] is not None:
+                res["end"] = date
             else:
                 res["start"] = date
 
