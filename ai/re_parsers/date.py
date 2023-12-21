@@ -170,7 +170,7 @@ class DateParser:
         year = None
         if year_text is not None:
             year = int(year_text)
-            if year < 100:
+            if len(year_text) == 2:
                 year += 2000
 
         return (day, month, year)
