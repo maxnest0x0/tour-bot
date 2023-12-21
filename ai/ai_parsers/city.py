@@ -21,9 +21,9 @@ class CityParser:
     async def parse(self, text, state):
         prepared_text = self._prepare_text(text)
         ents = self._get_named_entities(prepared_text)
-        phrases = self._find_prepositions(ents)
-        city_phrases = await self._process_cities(phrases)
-        res = self._decide_result(city_phrases, state)
+        locations_with_preposition_type = self._find_prepositions(ents)
+        cities_with_preposition_type = await self._process_cities(locations_with_preposition_type)
+        res = self._decide_result(cities_with_preposition_type, state)
 
         return res
 
@@ -45,7 +45,7 @@ class CityParser:
         return ents
 
     def _find_prepositions(self, ents):
-        phrases = []
+        locations_with_preposition_type = []
 
         for ent in ents:
             preposition_type = None
@@ -59,14 +59,14 @@ class CityParser:
                 if preposition in self.DESTINATION_PREPOSITIONS:
                     preposition_type = PrepositionType.DESTINATION
 
-            phrases.append((preposition_type, ent.text))
+            locations_with_preposition_type.append((preposition_type, ent.text))
 
-        return phrases
+        return locations_with_preposition_type
 
-    async def _process_cities(self, phrases):
-        city_phrases = []
+    async def _process_cities(self, locations_with_preposition_type):
+        cities_with_preposition_type = []
 
-        for preposition_type, name in phrases:
+        for preposition_type, name in locations_with_preposition_type:
             try:
                 places = await AviasalesAPI.suggest_places(name, 2)
             except AviasalesAPIError:
@@ -79,18 +79,18 @@ class CityParser:
             if place["type"] != "city":
                 continue
 
-            city_phrases.append((preposition_type, place))
+            cities_with_preposition_type.append((preposition_type, place))
 
-        return city_phrases
+        return cities_with_preposition_type
 
-    def _decide_result(self, city_phrases, state):
-        if len(city_phrases) > 2:
+    def _decide_result(self, cities_with_preposition_type, state):
+        if len(cities_with_preposition_type) > 2:
             raise CityParserError("Too many cities found")
 
         res = {"origin": None, "destination": None}
         cities_without_preposition = []
 
-        for preposition_type, city in city_phrases:
+        for preposition_type, city in cities_with_preposition_type:
             if preposition_type == PrepositionType.ORIGIN:
                 if res["origin"] is not None:
                     raise CityParserError("Several origin cities found")
