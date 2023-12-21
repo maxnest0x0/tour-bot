@@ -29,25 +29,25 @@ class DateParser:
     END_PREPOSITIONS = ["по", "до"]
 
     def __init__(self):
-        date_regexs = []
+        date_regexps = []
 
-        long_day_regex = r"\d\d|\d"
-        all_months_regex = "|".join(map(re.escape, self.MONTHS))
-        long_month_regex = fr"({all_months_regex})[^ ]*"
-        long_year_regex = r"\d\d\d\d"
+        long_day_regexp = r"\d\d|\d"
+        all_months_regexp = "|".join(map(re.escape, self.MONTHS))
+        long_month_regexp = fr"({all_months_regexp})[^ ]*"
+        long_year_regexp = r"\d\d\d\d"
 
-        date_regexs.append(fr"(?:^|(?<= ))({long_day_regex}) {long_month_regex} ({long_year_regex})(?:$|(?=[г ]))")
-        date_regexs.append(fr"(?:^|(?<= ))({long_day_regex}) {long_month_regex}(?:$|(?= ))")
-        date_regexs.append(fr"(?:^|(?<= ))({long_day_regex}) числ")
+        date_regexps.append(fr"(?:^|(?<= ))({long_day_regexp}) {long_month_regexp} ({long_year_regexp})(?:$|(?=[г ]))")
+        date_regexps.append(fr"(?:^|(?<= ))({long_day_regexp}) {long_month_regexp}(?:$|(?= ))")
+        date_regexps.append(fr"(?:^|(?<= ))({long_day_regexp}) числ")
 
-        short_day_regex = r"\d\d|\d"
-        short_month_regex = r"\d\d|\d"
-        short_year_regex = r"\d\d\d\d|\d\d"
+        short_day_regexp = r"\d\d|\d"
+        short_month_regexp = r"\d\d|\d"
+        short_year_regexp = r"\d\d\d\d|\d\d"
 
-        date_regexs.append(fr"(?:^|(?<= ))({short_day_regex})\.({short_month_regex})\.({short_year_regex})(?:$|(?= ))")
-        date_regexs.append(fr"(?:^|(?<= ))({short_day_regex})\.({short_month_regex})(?:$|(?= ))")
+        date_regexps.append(fr"(?:^|(?<= ))({short_day_regexp})\.({short_month_regexp})\.({short_year_regexp})(?:$|(?= ))")
+        date_regexps.append(fr"(?:^|(?<= ))({short_day_regexp})\.({short_month_regexp})(?:$|(?= ))")
 
-        self._date_regexs = [re.compile(regex, re.I) for regex in date_regexs]
+        self._date_regexps = [re.compile(regexp, re.I) for regexp in date_regexps]
 
     def parse(self, text, state):
         matches = self._find_dates(text)
@@ -61,8 +61,8 @@ class DateParser:
         found_spans = []
         matches = []
 
-        for regex in self._date_regexs:
-            for m in re.finditer(regex, text):
+        for regexp in self._date_regexps:
+            for m in re.finditer(regexp, text):
                 for start, end in found_spans:
                     if max(start, m.start()) < min(end, m.end()):
                         break
