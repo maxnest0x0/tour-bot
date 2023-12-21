@@ -1,13 +1,13 @@
 import atexit
 from selenium.webdriver import Chrome, ChromeOptions
-from typing import cast
+from typing import Final, cast
 
 class AviasalesBrowserAuthError(Exception):
     pass
 
 class AviasalesBrowserAuth:
-    AVIASALES_URL = "https://aviasales.ru/"
-    CHROME_ARGS = [
+    AVIASALES_URL: Final = "https://aviasales.ru/"
+    CHROME_ARGS: Final = [
         "--headless=new",
         "--no-sandbox",
         "--disable-dev-shm-usage",
