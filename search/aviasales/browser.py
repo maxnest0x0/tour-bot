@@ -1,3 +1,4 @@
+import atexit
 from selenium.webdriver import Chrome, ChromeOptions
 from typing import cast
 
@@ -13,6 +14,8 @@ class AviasalesBrowserAuth:
     ]
 
     def __init__(self) -> None:
+        atexit.register(self.quit)
+
         options = ChromeOptions()
         for arg in self.CHROME_ARGS:
             options.add_argument(arg)
@@ -46,5 +49,4 @@ class AviasalesBrowserAuth:
         self._driver.refresh()
 
     def quit(self) -> None:
-        self._assert_driver_alive()
         self._driver.quit()
