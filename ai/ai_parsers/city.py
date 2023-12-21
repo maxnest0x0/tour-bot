@@ -52,26 +52,16 @@ class CityParser:
 
             if ent.start > 0:
                 preposition = ent.doc[ent.start - 1].lower_
-                preposition_type = self._get_preposition_type(preposition)
 
-                if preposition_type is None and ent.start > 1:
-                    preposition = ent.doc[ent.start - 2].lower_
-                    preposition_type = self._get_preposition_type(preposition)
+                if preposition in self.ORIGIN_PREPOSITIONS:
+                    preposition_type = PrepositionType.ORIGIN
+
+                if preposition in self.DESTINATION_PREPOSITIONS:
+                    preposition_type = PrepositionType.DESTINATION
 
             phrases.append((preposition_type, ent.text))
 
         return phrases
-
-    def _get_preposition_type(self, preposition):
-        preposition_type = None
-
-        if preposition in self.ORIGIN_PREPOSITIONS:
-            preposition_type = PrepositionType.ORIGIN
-
-        if preposition in self.DESTINATION_PREPOSITIONS:
-            preposition_type = PrepositionType.DESTINATION
-
-        return preposition_type
 
     async def _process_cities(self, phrases):
         city_phrases = []
