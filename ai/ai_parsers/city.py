@@ -1,5 +1,5 @@
 import spacy
-from typing import Sequence
+from typing import Final, Sequence
 
 from search.aviasales.api import AviasalesAPI, AviasalesAPIError
 from .data_types import *
@@ -9,9 +9,10 @@ class CityParserError(Exception):
     pass
 
 class CityParser:
-    NER_LABELS = ["LOC"]
-    ORIGIN_PREPOSITIONS = ["из", "с", "со", "от"]
-    DESTINATION_PREPOSITIONS = ["в", "во", "на", "к", "до"]
+    NER_LABELS: Final = ["LOC"]
+
+    ORIGIN_PREPOSITIONS: Final = ["из", "с", "со", "от"]
+    DESTINATION_PREPOSITIONS: Final = ["в", "во", "на", "к", "до"]
 
     def __init__(self, model_name: str="ru_core_news_sm"):
         self._model = spacy.load(model_name)

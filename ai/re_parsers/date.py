@@ -1,6 +1,6 @@
 import re
 import datetime as dt
-from typing import Sequence
+from typing import Final, Sequence
 
 from .data_types import *
 from bot.data_types import ParamsState, ParamsStateUpdate
@@ -9,9 +9,9 @@ class DateParserError(Exception):
     pass
 
 class DateParser:
-    TIMEZONE = dt.timezone(dt.timedelta(hours=5))
+    TIMEZONE: Final = dt.timezone(dt.timedelta(hours=5))
 
-    MONTHS = [
+    MONTHS: Final = [
         "янв",
         "фев",
         "мар",
@@ -25,12 +25,11 @@ class DateParser:
         "ноя",
         "дек",
     ]
+    MONTH_PLACEHOLDER: Final = "числ"
+    YEAR_ENDING: Final = "г"
 
-    MONTH_PLACEHOLDER = "числ"
-    YEAR_ENDING = "г"
-
-    START_PREPOSITIONS = ["с", "со", "от"]
-    END_PREPOSITIONS = ["по", "до"]
+    START_PREPOSITIONS: Final = ["с", "со", "от"]
+    END_PREPOSITIONS: Final = ["по", "до"]
 
     def __init__(self) -> None:
         all_months = r"|".join(map(re.escape, self.MONTHS))
