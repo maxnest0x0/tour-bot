@@ -25,29 +25,38 @@ class DateParser:
         "дек",
     ]
 
+    MONTH_PLACEHOLDER = "числ"
+    YEAR_ENDING = "г"
+
     START_PREPOSITIONS = ["с", "со", "от"]
     END_PREPOSITIONS = ["по", "до"]
 
     def __init__(self):
-        date_regexps = []
+        all_months = r"|".join(map(re.escape, self.MONTHS))
+        default_start = r"(?:^|(?<= ))"
+        default_end = r"(?:$|(?= ))"
+        year_end = default_end.replace(r" ", fr"[{re.escape(self.YEAR_ENDING)} ]")
+        empty_group = r"()"
 
-        long_day_regexp = r"\d\d|\d"
-        all_months_regexp = "|".join(map(re.escape, self.MONTHS))
-        long_month_regexp = fr"({all_months_regexp})[^ ]*"
-        long_year_regexp = r"\d\d\d\d"
+        long_day = r"(\d\d|\d)"
+        long_month = fr"({all_months})[^ ]*"
+        long_year = r"(\d\d\d\d)"
 
-        date_regexps.append(fr"(?:^|(?<= ))({long_day_regexp}) {long_month_regexp} ({long_year_regexp})(?:$|(?=[г ]))")
-        date_regexps.append(fr"(?:^|(?<= ))({long_day_regexp}) {long_month_regexp}(?:$|(?= ))")
-        date_regexps.append(fr"(?:^|(?<= ))({long_day_regexp}) числ")
+        short_day = r"(\d\d|\d)"
+        short_month = r"(\d\d|\d)"
+        short_year = r"(\d\d\d\d|\d\d)"
 
-        short_day_regexp = r"\d\d|\d"
-        short_month_regexp = r"\d\d|\d"
-        short_year_regexp = r"\d\d\d\d|\d\d"
+        date_options = [
+            fr"{default_start}{long_day} {long_month} {long_year}{year_end}",
+            fr"{default_start}{long_day} {long_month}{default_end}{empty_group}",
+            fr"{default_start}{long_day} {re.escape(self.MONTH_PLACEHOLDER)}{empty_group * 2}",
+            fr"{default_start}{short_day}\.{short_month}\.{short_year}{default_end}",
+            fr"{default_start}{short_day}\.{short_month}{default_end}{empty_group}",
+        ]
+        self._date_options_num = len(date_options)
 
-        date_regexps.append(fr"(?:^|(?<= ))({short_day_regexp})\.({short_month_regexp})\.({short_year_regexp})(?:$|(?= ))")
-        date_regexps.append(fr"(?:^|(?<= ))({short_day_regexp})\.({short_month_regexp})(?:$|(?= ))")
-
-        self._date_regexps = [re.compile(regexp, re.I) for regexp in date_regexps]
+        date_regexp = r"|".join(date_options)
+        self._date_regexp = re.compile(date_regexp, re.IGNORECASE)
 
     def parse(self, text, state):
         matches = self._find_dates(text)
@@ -58,17 +67,16 @@ class DateParser:
         return res
 
     def _find_dates(self, text):
-        found_spans = []
         matches = []
 
-        for regexp in self._date_regexps:
-            for m in re.finditer(regexp, text):
-                for start, end in found_spans:
-                    if max(start, m.start()) < min(end, m.end()):
-                        break
-                else:
-                    found_spans.append(m.span())
-                    matches.append(m)
+        for m in re.finditer(self._date_regexp, text):
+            for group_idx in range(1, self._date_options_num * 3, 3):
+                day_text = m[group_idx] or None
+                month_text = m[group_idx + 1] or None
+                year_text = m[group_idx + 2] or None
+
+                if day_text is not None:
+                    matches.append((m.start(), day_text, month_text, year_text))
 
         return matches
 
@@ -77,7 +85,7 @@ class DateParser:
 
         for m in matches:
             preposition_type = None
-            words = text[:m.start()].split()
+            words = text[:m[0]].split()
 
             if words:
                 preposition = words[-1].lower()
@@ -96,8 +104,7 @@ class DateParser:
         dates_with_preposition_type = []
 
         for preposition_type, m in matches_with_preposition_type:
-            prepared_date = self._prepare_date(m)
-            translated_date = self._translate_date(*prepared_date)
+            translated_date = self._translate_date(*m[1:])
             predicted_date = self._predict_date(*translated_date)
             date = dt.date(*reversed(predicted_date))
 
@@ -148,21 +155,6 @@ class DateParser:
                 res["start"] = date
 
         return res
-
-    def _prepare_date(self, m):
-        m_len = len(m.groups())
-
-        day_text = m[1]
-
-        month_text = None
-        if m_len > 1:
-            month_text = m[2]
-
-        year_text = None
-        if m_len > 2:
-            year_text = m[3]
-
-        return (day_text, month_text, year_text)
 
     def _translate_date(self, day_text, month_text=None, year_text=None):
         day = int(day_text)
