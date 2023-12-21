@@ -59,15 +59,15 @@ class DateParser:
         self._date_regexp = re.compile(date_regexp, re.IGNORECASE)
 
     def parse(self, text, state):
-        matches = self._find_dates(text)
-        matches_with_preposition_type = self._find_prepositions(matches, text)
-        dates_with_preposition_type = self._process_dates(matches_with_preposition_type)
+        date_text_tuples_with_index = self._find_dates(text)
+        date_text_tuples_with_preposition_type = self._find_prepositions(date_text_tuples_with_index, text)
+        dates_with_preposition_type = self._process_dates(date_text_tuples_with_preposition_type)
         res = self._decide_result(dates_with_preposition_type, state)
 
         return res
 
     def _find_dates(self, text):
-        matches = []
+        date_text_tuples_with_index = []
 
         for m in re.finditer(self._date_regexp, text):
             for group_idx in range(1, self._date_options_num * 3, 3):
@@ -76,16 +76,16 @@ class DateParser:
                 year_text = m[group_idx + 2] or None
 
                 if day_text is not None:
-                    matches.append((m.start(), day_text, month_text, year_text))
+                    date_text_tuples_with_index.append((m.start(), day_text, month_text, year_text))
 
-        return matches
+        return date_text_tuples_with_index
 
-    def _find_prepositions(self, matches, text):
-        matches_with_preposition_type = []
+    def _find_prepositions(self, date_text_tuples_with_index, text):
+        date_text_tuples_with_preposition_type = []
 
-        for m in matches:
+        for idx, *date_text_tuple in date_text_tuples_with_index:
             preposition_type = None
-            words = text[:m[0]].split()
+            words = text[:idx].split()
 
             if words:
                 preposition = words[-1].lower()
@@ -96,17 +96,17 @@ class DateParser:
                 if preposition in self.END_PREPOSITIONS:
                     preposition_type = PrepositionType.END
 
-            matches_with_preposition_type.append((preposition_type, m))
+            date_text_tuples_with_preposition_type.append((preposition_type, *date_text_tuple))
 
-        return matches_with_preposition_type
+        return date_text_tuples_with_preposition_type
 
-    def _process_dates(self, matches_with_preposition_type):
+    def _process_dates(self, date_text_tuples_with_preposition_type):
         dates_with_preposition_type = []
 
-        for preposition_type, m in matches_with_preposition_type:
-            translated_date = self._translate_date(*m[1:])
-            predicted_date = self._predict_date(*translated_date)
-            date = dt.date(*reversed(predicted_date))
+        for preposition_type, *date_text_tuple in date_text_tuples_with_preposition_type:
+            translated_date_tuple = self._translate_date(*date_text_tuple)
+            predicted_date_tuple = self._predict_date(*translated_date_tuple)
+            date = dt.date(*reversed(predicted_date_tuple))
 
             dates_with_preposition_type.append((preposition_type, date))
 
