@@ -10,6 +10,8 @@ class DateParserError(Exception):
     pass
 
 class DateParser:
+    TIMEZONE = dt.timezone(dt.timedelta(hours=5))
+
     MONTHS = [
         "янв",
         "фев",
@@ -162,6 +164,7 @@ class DateParser:
         month = None
         if month_text is not None:
             month_text = month_text.lower()
+
             if month_text in self.MONTHS:
                 month = self.MONTHS.index(month_text) + 1
             else:
@@ -170,6 +173,7 @@ class DateParser:
         year = None
         if year_text is not None:
             year = int(year_text)
+
             if len(year_text) == 2:
                 year += 2000
 
@@ -194,26 +198,19 @@ class DateParser:
 
         return True
 
-    def _assert_date_valid(self, *args):
-        if not self._is_date_valid(*args):
+    def _assert_date_valid(self, *date_tuple):
+        if not self._is_date_valid(*date_tuple):
             raise DateParserError("Invalid date")
 
-    def _is_date_in_past(self, today, day, month, year):
-        if year < today.year:
-            return True
+    def _get_today_date(self):
+        return dt.datetime.now(self.TIMEZONE).date()
 
-        if year == today.year:
-            if month < today.month:
-                return True
-
-            if month == today.month:
-                if day < today.day:
-                    return True
-
-        return False
+    def _is_date_not_in_past(self, day, month, year):
+        date = dt.date(year, month, day)
+        return date >= self._get_today_date()
 
     def _predict_date(self, day, month=None, year=None):
-        today = dt.datetime.now(dt.timezone(dt.timedelta(hours=5))).date()
+        today = self._get_today_date()
 
         if year is not None:
             self._assert_date_valid(day, month, year)
@@ -223,7 +220,7 @@ class DateParser:
             self._assert_date_valid(day, month)
             year = today.year
 
-            while self._is_date_in_past(today, day, month, year) or not self._is_date_valid(day, month, year):
+            while not self._is_date_valid(day, month, year) or not self._is_date_not_in_past(day, month, year):
                 year += 1
 
             return (day, month, year)
@@ -232,7 +229,7 @@ class DateParser:
         year = today.year
         month = today.month
 
-        while self._is_date_in_past(today, day, month, year) or not self._is_date_valid(day, month, year):
+        while not self._is_date_valid(day, month, year) or not self._is_date_not_in_past(day, month, year):
             month += 1
 
             if month > 12:
