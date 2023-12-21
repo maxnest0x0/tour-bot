@@ -1,10 +1,40 @@
 import re
 import datetime as dt
 from enum import Enum
+from typing import NamedTuple, Optional, Sequence
+
+from bot.data_types import ParamsState, ParamsStateUpdate
 
 class PrepositionType(Enum):
     START = 1
     END = 2
+
+class DateTextTuple(NamedTuple):
+    day_text: str
+    month_text: Optional[str] = None
+    year_text: Optional[str] = None
+
+class DateTuple(NamedTuple):
+    day: int
+    month: Optional[int] = None
+    year: Optional[int] = None
+
+class FilledDateTuple(NamedTuple):
+    day: int
+    month: int
+    year: int
+
+class DateTextTupleWithIndex(NamedTuple):
+    idx: int
+    date_text_tuple: DateTextTuple
+
+class DateTextTupleWithPrepositionType(NamedTuple):
+    preposition_type: Optional[PrepositionType]
+    date_text_tuple: DateTextTuple
+
+class DateWithPrepositionType(NamedTuple):
+    preposition_type: Optional[PrepositionType]
+    date: dt.date
 
 class DateParserError(Exception):
     pass
@@ -33,7 +63,7 @@ class DateParser:
     START_PREPOSITIONS = ["с", "со", "от"]
     END_PREPOSITIONS = ["по", "до"]
 
-    def __init__(self):
+    def __init__(self) -> None:
         all_months = r"|".join(map(re.escape, self.MONTHS))
         default_start = r"(?:^|(?<= ))"
         default_end = r"(?:$|(?= ))"
@@ -60,7 +90,7 @@ class DateParser:
         date_regexp = r"|".join(date_options)
         self._date_regexp = re.compile(date_regexp, re.IGNORECASE)
 
-    def parse(self, text, state):
+    def parse(self, text: str, state: ParamsState) -> ParamsStateUpdate:
         date_text_tuples_with_index = self._find_dates(text)
         date_text_tuples_with_preposition_type = self._find_prepositions(date_text_tuples_with_index, text)
         dates_with_preposition_type = self._process_dates(date_text_tuples_with_preposition_type)
@@ -68,7 +98,7 @@ class DateParser:
 
         return res
 
-    def _find_dates(self, text):
+    def _find_dates(self, text: str) -> list[DateTextTupleWithIndex]:
         date_text_tuples_with_index = []
 
         for m in re.finditer(self._date_regexp, text):
@@ -78,14 +108,15 @@ class DateParser:
                 year_text = m[group_idx + 2] or None
 
                 if day_text is not None:
-                    date_text_tuples_with_index.append((m.start(), day_text, month_text, year_text))
+                    date_text_tuple = DateTextTuple(day_text, month_text, year_text)
+                    date_text_tuples_with_index.append(DateTextTupleWithIndex(m.start(), date_text_tuple))
 
         return date_text_tuples_with_index
 
-    def _find_prepositions(self, date_text_tuples_with_index, text):
+    def _find_prepositions(self, date_text_tuples_with_index: Sequence[DateTextTupleWithIndex], text: str) -> list[DateTextTupleWithPrepositionType]:
         date_text_tuples_with_preposition_type = []
 
-        for idx, *date_text_tuple in date_text_tuples_with_index:
+        for idx, date_text_tuple in date_text_tuples_with_index:
             preposition_type = None
             words = text[:idx].split()
 
@@ -98,27 +129,27 @@ class DateParser:
                 if preposition in self.END_PREPOSITIONS:
                     preposition_type = PrepositionType.END
 
-            date_text_tuples_with_preposition_type.append((preposition_type, *date_text_tuple))
+            date_text_tuples_with_preposition_type.append(DateTextTupleWithPrepositionType(preposition_type, date_text_tuple))
 
         return date_text_tuples_with_preposition_type
 
-    def _process_dates(self, date_text_tuples_with_preposition_type):
+    def _process_dates(self, date_text_tuples_with_preposition_type: Sequence[DateTextTupleWithPrepositionType]) -> list[DateWithPrepositionType]:
         dates_with_preposition_type = []
 
-        for preposition_type, *date_text_tuple in date_text_tuples_with_preposition_type:
-            translated_date_tuple = self._translate_date(*date_text_tuple)
-            predicted_date_tuple = self._predict_date(*translated_date_tuple)
+        for preposition_type, date_text_tuple in date_text_tuples_with_preposition_type:
+            translated_date_tuple = self._translate_date(date_text_tuple)
+            predicted_date_tuple = self._predict_date(translated_date_tuple)
             date = dt.date(*reversed(predicted_date_tuple))
 
-            dates_with_preposition_type.append((preposition_type, date))
+            dates_with_preposition_type.append(DateWithPrepositionType(preposition_type, date))
 
         return dates_with_preposition_type
 
-    def _decide_result(self, dates_with_preposition_type, state):
+    def _decide_result(self, dates_with_preposition_type: Sequence[DateWithPrepositionType], state: ParamsState) -> ParamsStateUpdate:
         if len(dates_with_preposition_type) > 2:
             raise DateParserError("Too many dates found")
 
-        res = {"start": None, "end": None}
+        res: ParamsStateUpdate = {"start": None, "end": None}
         dates_without_preposition = []
 
         for preposition_type, date in dates_with_preposition_type:
@@ -158,7 +189,9 @@ class DateParser:
 
         return res
 
-    def _translate_date(self, day_text, month_text=None, year_text=None):
+    def _translate_date(self, date_text_tuple: DateTextTuple) -> DateTuple:
+        day_text, month_text, year_text = date_text_tuple
+
         day = int(day_text)
 
         month = None
@@ -177,10 +210,13 @@ class DateParser:
             if len(year_text) == 2:
                 year += 2000
 
-        return (day, month, year)
+        return DateTuple(day, month, year)
 
-    def _is_date_valid(self, day, month=None, year=None):
+    def _is_date_valid(self, date_tuple: DateTuple) -> bool:
+        day, month, year = date_tuple
+
         if year is not None:
+            assert month is not None
             try:
                 dt.date(year, month, day)
             except ValueError:
@@ -198,42 +234,51 @@ class DateParser:
 
         return True
 
-    def _assert_date_valid(self, *date_tuple):
-        if not self._is_date_valid(*date_tuple):
+    def _assert_date_valid(self, date_tuple: DateTuple) -> None:
+        if not self._is_date_valid(date_tuple):
             raise DateParserError("Invalid date")
 
-    def _get_today_date(self):
+    def _get_today_date(self) -> dt.date:
         return dt.datetime.now(self.TIMEZONE).date()
 
-    def _is_date_not_in_past(self, day, month, year):
-        date = dt.date(year, month, day)
+    def _is_date_not_in_past(self, date_tuple: FilledDateTuple) -> bool:
+        date = dt.date(*reversed(date_tuple))
         return date >= self._get_today_date()
 
-    def _predict_date(self, day, month=None, year=None):
+    def _predict_date(self, date_tuple: DateTuple) -> FilledDateTuple:
+        day, month, year = date_tuple
         today = self._get_today_date()
 
         if year is not None:
-            self._assert_date_valid(day, month, year)
-            return (day, month, year)
+            self._assert_date_valid(DateTuple(day, month, year))
+            assert month is not None
+            return FilledDateTuple(day, month, year)
 
         if month is not None:
-            self._assert_date_valid(day, month)
+            self._assert_date_valid(DateTuple(day, month))
             year = today.year
 
-            while not self._is_date_valid(day, month, year) or not self._is_date_not_in_past(day, month, year):
+            while True:
+                if self._is_date_valid(DateTuple(day, month, year)):
+                    if self._is_date_not_in_past(FilledDateTuple(day, month, year)):
+                        break
+
                 year += 1
 
-            return (day, month, year)
+            return FilledDateTuple(day, month, year)
 
-        self._assert_date_valid(day)
+        self._assert_date_valid(DateTuple(day))
         year = today.year
         month = today.month
 
-        while not self._is_date_valid(day, month, year) or not self._is_date_not_in_past(day, month, year):
-            month += 1
+        while True:
+            if self._is_date_valid(DateTuple(day, month, year)):
+                if self._is_date_not_in_past(FilledDateTuple(day, month, year)):
+                    break
 
+            month += 1
             if month > 12:
                 month = 1
                 year += 1
 
-        return (day, month, year)
+        return FilledDateTuple(day, month, year)
