@@ -2,7 +2,7 @@ from __future__ import annotations
 import requests
 import functools
 import asyncio as aio
-from typing import Any, Final, Iterable, Optional, cast
+from typing import Any, Final, Sequence, Optional, cast
 
 from .browser import AviasalesBrowserAuth
 from .data_types import SearchParams, SearchResults, SuggestedPlace, Ticket
@@ -75,7 +75,7 @@ class AviasalesAPI:
         return ticket_url
 
     @classmethod
-    async def suggest_places(cls, text: str, limit: int, place_types: Iterable[str]=("airport", "city", "country")) -> list[SuggestedPlace]:
+    async def suggest_places(cls, text: str, limit: int, place_types: Sequence[str]=("airport", "city", "country")) -> list[SuggestedPlace]:
         body = [("term", text), ("max", limit)]
         for place_type in place_types:
             body.append(("types[]", place_type))
