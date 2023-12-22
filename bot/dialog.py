@@ -7,78 +7,97 @@ from parsers.date import DateParserError
 from .aggregator import TicketAggregator
 from .text import Text
 
+parser = InputParser()
+aggregator = TicketAggregator()
+
 class Dialog:
     LIFETIME = dt.timedelta(minutes=10)
 
-    parser = InputParser()
-    search = TicketAggregator()
-
     def __init__(self, chat):
-        self.chat = chat
-        self.message = None
+        self._chat = chat
+        self._message = None
+        self._busy = False
+        self._done = False
+        self._active()
 
-        self.reset_state()
-        self.active()
-
-    def reset_state(self):
-        self.state = {
+        self._state = {
             "origin": None,
             "destination": None,
             "start": None,
             "end": None,
         }
 
-    def active(self):
-        self.last_active = dt.datetime.now()
+    def _active(self):
+        self._last_active = dt.datetime.now()
 
-    def is_expired(self):
+    def is_alive(self):
         now = dt.datetime.now()
-        return now > self.last_active + self.LIFETIME
+        return not self._done and now < self._last_active + self.LIFETIME
 
-    async def process_text(self, text):
-        await self.send(Text.processing_input(), True)
+    def is_busy(self):
+        return self._busy
 
-        try:
-            self.state = await self.parser.parse(text, self.state)
-        except CityParserError as error:
-            await self.edit(Text.city_error() + "\n" + Text.error_text(str(error)))
-            raise error
-        except DateParserError as error:
-            await self.edit(Text.date_error() + "\n" + Text.error_text(str(error)))
-            raise error
-        except TooLongTextError as error:
-            await self.edit(Text.too_long_error())
-            raise error
-        except Exception as error:
-            await self.edit(Text.unknown_error())
-            self.reset_state()
-            raise error
+    async def process_input(self, text):
+        self._busy = True
+        self._active()
+        await self._send(Text.processing_input())
 
-        keys = self.parser.get_missing_params(self.state)
-        if keys:
-            text = Text.params_state(self.state) + "\n\n" + Text.missing_params(keys)
-            await self.edit(text)
-
-            self.message = None
+        res = await self._parse_text(text)
+        if not res:
+            self._busy = False
             return
 
-        await self.edit(Text.searching())
+        res = await self._check_for_missing_params()
+        if not res:
+            self._busy = False
+            return
+
+        await self._edit(Text.searching())
+        await self._search_tickets()
+        self._done = True
+
+    async def _parse_text(self, text):
         try:
-            text = await self.search.search(self.state)
+            self._state = await parser.parse(text, self._state)
+        except CityParserError as error:
+            await self._edit(Text.city_error() + "\n" + Text.error_text(str(error)))
+            return False
+        except DateParserError as error:
+            await self._edit(Text.date_error() + "\n" + Text.error_text(str(error)))
+            return False
+        except TooLongTextError as error:
+            await self._edit(Text.too_long_error())
+            return False
         except Exception as error:
-            await self.edit(Text.unknown_error())
-            self.reset_state()
+            await self._edit(Text.unknown_error())
+            self._done = True
             raise error
 
-        await self.edit(text)
-        self.message = None
-        self.reset_state()
+        return True
 
-    async def send(self, text, save=False):
-        message = await self.chat.send_message(text, tg.constants.ParseMode.HTML, True)
+    async def _check_for_missing_params(self):
+        missing_params = parser.get_missing_params(self._state)
+        if missing_params:
+            text = Text.params_state(self._state) + "\n\n" + Text.missing_params(missing_params)
+            await self._edit(text)
 
-        if save:
-            self.message = message
+            return False
 
-    async def edit(self, text):
-        await self.message.edit_text(text, tg.constants.ParseMode.HTML, True)
+        return True
+
+    async def _search_tickets(self):
+        try:
+            text = await aggregator.search(self._state)
+        except Exception as error:
+            await self._edit(Text.unknown_error())
+            self._done = True
+            raise error
+
+        await self._edit(text)
+        return True
+
+    async def _send(self, text):
+        self._message = await self._chat.send_message(text, tg.constants.ParseMode.HTML, True)
+
+    async def _edit(self, text):
+        await self._message.edit_text(text, tg.constants.ParseMode.HTML, True)

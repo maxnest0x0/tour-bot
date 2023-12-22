@@ -6,33 +6,29 @@ from .text import Text
 
 class Handlers:
     def __init__(self, bot):
-        self.bot = bot
+        self._bot = bot
+
+    async def _send(self, update: tg.Update, text: str):
+        await update.message.reply_text(Text.welcome(), tg.constants.ParseMode.HTML, True)
 
     async def start(self, update: tg.Update, context: ext.ContextTypes.DEFAULT_TYPE):
         if update.message is not None:
-            await update.message.reply_text(Text.welcome(), tg.constants.ParseMode.HTML, True)
+            await self._send(Text.welcome())
 
     async def message(self, update: tg.Update, context: ext.ContextTypes.DEFAULT_TYPE):
         chat_id = update.effective_chat.id
 
-        if chat_id in self.bot.dialogs:
-            dialog = self.bot.dialogs[chat_id]
-            if dialog.is_expired():
-                del self.bot.dialogs[chat_id]
+        if chat_id in self._bot.dialogs:
+            dialog = self._bot.dialogs[chat_id]
+            if not dialog.is_alive():
+                del self._bot.dialogs[chat_id]
 
-        if chat_id not in self.bot.dialogs:
-            self.bot.dialogs[chat_id] = Dialog(update.effective_chat)
+        if chat_id not in self._bot.dialogs:
+            self._bot.dialogs[chat_id] = Dialog(update.effective_chat)
 
-        dialog = self.bot.dialogs[chat_id]
-        dialog.active()
+        dialog = self._bot.dialogs[chat_id]
 
-        if dialog.message is None:
-            dialog.message = True
-
-            try:
-                await dialog.process_text(update.message.text)
-            except Exception as error:
-                dialog.message = None
-                raise error
+        if not dialog.is_busy():
+            await dialog.process_input(update.message.text)
         else:
-            await dialog.send(Text.busy())
+            await self._send(Text.busy())
