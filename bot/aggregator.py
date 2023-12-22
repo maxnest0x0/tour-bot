@@ -1,13 +1,20 @@
 import datetime as dt
+from typing import Optional
 
 from search.aviasales.api import AviasalesAPI
 from .text import Text
+from .data_types import ParamsState
+from search.aviasales.data_types import SuggestedPlace, Direction, SearchResults
 
 class TicketAggregator:
-    def __init__(self):
+    def __init__(self) -> None:
         self.api = AviasalesAPI()
 
-    async def search(self, state, ticket_limit=3, wait_max_retries=3):
+    async def search(self, state: ParamsState, ticket_limit: int=3, wait_max_retries: Optional[int]=3) -> str:
+        assert state["origin"] is not None
+        assert state["destination"] is not None
+        assert state["start"] is not None
+
         directions = [self._get_direction(state["origin"], state["destination"], state["start"])]
         if state["end"] is not None:
             directions.append(self._get_direction(state["destination"], state["origin"], state["end"]))
@@ -23,14 +30,14 @@ class TicketAggregator:
         text = await self._generate_text(res)
         return text
 
-    def _get_direction(self, origin, destination, date):
+    def _get_direction(self, origin: SuggestedPlace, destination: SuggestedPlace, date: dt.date) -> Direction:
         return {
             "origin": origin["code"],
             "destination": destination["code"],
             "date": date.isoformat(),
         }
 
-    async def _generate_text(self, res):
+    async def _generate_text(self, res: SearchResults) -> str:
         tickets = res["tickets"]
         if not tickets:
             return Text.no_tickets_found()
