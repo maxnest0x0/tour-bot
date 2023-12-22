@@ -2,13 +2,14 @@ import re
 import datetime as dt
 from typing import Final, Sequence, cast
 
+from ..parser import Parser
 from .data_types import *
 from bot.data_types import ParamsState, ParamsStateUpdate
 
 class DateParserError(Exception):
     pass
 
-class DateParser:
+class DateParser(Parser):
     TIMEZONE: Final = dt.timezone(dt.timedelta(hours=5))
     MAX_DATE_OFFSET: Final = dt.timedelta(365)
 
@@ -233,34 +234,8 @@ class DateParser:
             if preposition_type is None:
                 dates_without_preposition.append(date)
 
-        if len(dates_without_preposition) == 2:
-            start, end = dates_without_preposition
-            res["start"] = start
-            res["end"] = end
-
-        if len(dates_without_preposition) == 1:
-            date = dates_without_preposition[0]
-
-            if res["end"] is not None:
-                res["start"] = date
-            elif res["start"] is not None:
-                res["end"] = date
-            elif state["end"] is not None:
-                res["start"] = date
-            elif state["start"] is not None:
-                res["end"] = date
-            else:
-                res["start"] = date
-
+        res = self._decide_without_preposition(res, state, dates_without_preposition, ("start", "end"), ("start", "end"))
         return res
-
-    def _update_state(self, res: ParamsStateUpdate, state: ParamsState) -> ParamsState:
-        update = cast(ParamsStateUpdate, {key: value for key, value in res.items() if value is not None})
-
-        new_state = state.copy()
-        new_state.update(update)
-
-        return new_state
 
     def _validate_state(self, state: ParamsState) -> None:
         today = self._get_today_date()

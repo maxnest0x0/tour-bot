@@ -2,13 +2,14 @@ import spacy
 from typing import Final, Sequence, cast
 
 from search.aviasales.api import AviasalesAPI, AviasalesAPIError
+from ..parser import Parser
 from .data_types import *
 from bot.data_types import ParamsState, ParamsStateUpdate
 
 class CityParserError(Exception):
     pass
 
-class CityParser:
+class CityParser(Parser):
     NER_LABELS: Final = ["LOC"]
 
     ORIGIN_PREPOSITIONS: Final = ["из", "с", "со", "от"]
@@ -107,34 +108,8 @@ class CityParser:
             if preposition_type is None:
                 cities_without_preposition.append(city)
 
-        if len(cities_without_preposition) == 2:
-            origin, destination = cities_without_preposition
-            res["origin"] = origin
-            res["destination"] = destination
-
-        if len(cities_without_preposition) == 1:
-            city = cities_without_preposition[0]
-
-            if res["origin"] is not None:
-                res["destination"] = city
-            elif res["destination"] is not None:
-                res["origin"] = city
-            elif state["origin"] is not None:
-                res["destination"] = city
-            elif state["destination"] is not None:
-                res["origin"] = city
-            else:
-                res["destination"] = city
-
+        res = self._decide_without_preposition(res, state, cities_without_preposition, ("origin", "destination"), ("destination", "origin"))
         return res
-
-    def _update_state(self, res: ParamsStateUpdate, state: ParamsState) -> ParamsState:
-        update = cast(ParamsStateUpdate, {key: value for key, value in res.items() if value is not None})
-
-        new_state = state.copy()
-        new_state.update(update)
-
-        return new_state
 
     def _validate_state(self, state: ParamsState) -> None:
         if state["origin"] is not None and state["destination"] is not None:
