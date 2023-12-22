@@ -1,7 +1,9 @@
 import datetime as dt
 import telegram as tg
 
-from .parser import Parser, TooLongTextError, CityParserError, DateParserError
+from .parser import Parser, TooLongTextError
+from ai.ai_parsers.city import CityParserError
+from ai.re_parsers.date import DateParserError
 from .tickets import TicketsSearch
 from .text import Text
 

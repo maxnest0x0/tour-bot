@@ -1,8 +1,8 @@
 import re
 import datetime as dt
 
-from ai.ai_parsers.city import CityParser, CityParserError
-from ai.re_parsers.date import DateParser, DateParserError
+from ai.ai_parsers.city import CityParser
+from ai.re_parsers.date import DateParser
 
 class ParserError(Exception):
     pass
@@ -24,17 +24,10 @@ class Parser:
         text = text.strip()
         text = re.sub(r"\s+", " ", text)
 
-        city_res = await self.city_parser.parse(text, state)
-        date_res = self.date_parser.parse(text, state)
+        new_state = state
+        new_state = await self.city_parser.parse(text, new_state)
+        new_state = self.date_parser.parse(text, new_state)
 
-        city_update = {key: value for key, value in city_res.items() if value is not None}
-        date_update = {key: value for key, value in date_res.items() if value is not None}
-
-        new_state = state.copy()
-        new_state.update(city_update)
-        new_state.update(date_update)
-
-        self._validate_state(new_state)
         state.update(new_state)
 
     def get_missing_keys(self, state):
@@ -44,29 +37,3 @@ class Parser:
                 keys.append(key)
 
         return keys
-
-    def _validate_state(self, state):
-        today = dt.datetime.now(dt.timezone(dt.timedelta(hours=5))).date()
-        max_date = today + dt.timedelta(365)
-
-        if state["origin"] is not None and state["destination"] is not None:
-            if state["origin"]["code"] == state["destination"]["code"]:
-                raise CityParserError("Origin and destination city are the same")
-
-        if state["start"] is not None:
-            if state["start"] < today:
-                raise DateParserError("Start date is in the past")
-
-            if state["start"] >= max_date:
-                raise DateParserError("Start date is too far in the future")
-
-        if state["end"] is not None:
-            if state["end"] < today:
-                raise DateParserError("End date is in the past")
-
-            if state["end"] >= max_date:
-                raise DateParserError("End date is too far in the future")
-
-        if state["start"] is not None and state["end"] is not None:
-            if state["end"] < state["start"]:
-                raise DateParserError("End date is earlier than start date")

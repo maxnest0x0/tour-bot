@@ -1,5 +1,5 @@
 import spacy
-from typing import Final, Sequence
+from typing import Final, Sequence, cast
 
 from search.aviasales.api import AviasalesAPI, AviasalesAPIError
 from .data_types import *
@@ -17,14 +17,16 @@ class CityParser:
     def __init__(self, model_name: str="ru_core_news_sm"):
         self._model = spacy.load(model_name)
 
-    async def parse(self, text: str, state: ParamsState) -> ParamsStateUpdate:
+    async def parse(self, text: str, state: ParamsState) -> ParamsState:
         prepared_text = self._prepare_text(text)
         ents = self._get_named_entities(prepared_text)
         locations_with_preposition_type = self._find_prepositions(ents)
         cities_with_preposition_type = await self._process_cities(locations_with_preposition_type)
         res = self._decide_result(cities_with_preposition_type, state)
+        new_state = self._update_state(res, state)
 
-        return res
+        self._validate_state(new_state)
+        return new_state
 
     def _prepare_text(self, text: str) -> str:
         max_len = max(len(word) for word in self.ORIGIN_PREPOSITIONS + self.DESTINATION_PREPOSITIONS)
@@ -125,3 +127,16 @@ class CityParser:
                 res["destination"] = city
 
         return res
+
+    def _update_state(self, res: ParamsStateUpdate, state: ParamsState) -> ParamsState:
+        update = cast(ParamsStateUpdate, {key: value for key, value in res.items() if value is not None})
+
+        new_state = state.copy()
+        new_state.update(update)
+
+        return new_state
+
+    def _validate_state(self, state: ParamsState) -> None:
+        if state["origin"] is not None and state["destination"] is not None:
+            if state["origin"]["code"] == state["destination"]["code"]:
+                raise CityParserError("Origin and destination city are the same")

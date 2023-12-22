@@ -1,6 +1,6 @@
 import re
 import datetime as dt
-from typing import Final, Sequence
+from typing import Final, Sequence, cast
 
 from .data_types import *
 from bot.data_types import ParamsState, ParamsStateUpdate
@@ -10,6 +10,7 @@ class DateParserError(Exception):
 
 class DateParser:
     TIMEZONE: Final = dt.timezone(dt.timedelta(hours=5))
+    MAX_DATE_OFFSET: Final = dt.timedelta(365)
 
     MONTHS: Final = [
         "янв",
@@ -58,13 +59,15 @@ class DateParser:
         date_regexp = r"|".join(date_options)
         self._date_regexp = re.compile(date_regexp, re.IGNORECASE)
 
-    def parse(self, text: str, state: ParamsState) -> ParamsStateUpdate:
+    def parse(self, text: str, state: ParamsState) -> ParamsState:
         date_text_tuples_with_index = self._find_dates(text)
         date_text_tuples_with_preposition_type = self._find_prepositions(date_text_tuples_with_index, text)
         dates_with_preposition_type = self._process_dates(date_text_tuples_with_preposition_type)
         res = self._decide_result(dates_with_preposition_type, state)
+        new_state = self._update_state(res, state)
 
-        return res
+        self._validate_state(new_state)
+        return new_state
 
     def _find_dates(self, text: str) -> list[DateTextTupleWithIndex]:
         date_text_tuples_with_index = []
@@ -112,50 +115,6 @@ class DateParser:
             dates_with_preposition_type.append(DateWithPrepositionType(preposition_type, date))
 
         return dates_with_preposition_type
-
-    def _decide_result(self, dates_with_preposition_type: Sequence[DateWithPrepositionType], state: ParamsState) -> ParamsStateUpdate:
-        if len(dates_with_preposition_type) > 2:
-            raise DateParserError("Too many dates found")
-
-        res: ParamsStateUpdate = {"start": None, "end": None}
-        dates_without_preposition = []
-
-        for preposition_type, date in dates_with_preposition_type:
-            if preposition_type == PrepositionType.START:
-                if res["start"] is not None:
-                    raise DateParserError("Several start dates found")
-
-                res["start"] = date
-
-            if preposition_type == PrepositionType.END:
-                if res["end"] is not None:
-                    raise DateParserError("Several end dates found")
-
-                res["end"] = date
-
-            if preposition_type is None:
-                dates_without_preposition.append(date)
-
-        if len(dates_without_preposition) == 2:
-            start, end = dates_without_preposition
-            res["start"] = start
-            res["end"] = end
-
-        if len(dates_without_preposition) == 1:
-            date = dates_without_preposition[0]
-
-            if res["end"] is not None:
-                res["start"] = date
-            elif res["start"] is not None:
-                res["end"] = date
-            elif state["end"] is not None:
-                res["start"] = date
-            elif state["start"] is not None:
-                res["end"] = date
-            else:
-                res["start"] = date
-
-        return res
 
     def _translate_date(self, date_text_tuple: DateTextTuple) -> DateTuple:
         day_text, month_text, year_text = date_text_tuple
@@ -250,3 +209,77 @@ class DateParser:
                 year += 1
 
         return FilledDateTuple(day, month, year)
+
+    def _decide_result(self, dates_with_preposition_type: Sequence[DateWithPrepositionType], state: ParamsState) -> ParamsStateUpdate:
+        if len(dates_with_preposition_type) > 2:
+            raise DateParserError("Too many dates found")
+
+        res: ParamsStateUpdate = {"start": None, "end": None}
+        dates_without_preposition = []
+
+        for preposition_type, date in dates_with_preposition_type:
+            if preposition_type == PrepositionType.START:
+                if res["start"] is not None:
+                    raise DateParserError("Several start dates found")
+
+                res["start"] = date
+
+            if preposition_type == PrepositionType.END:
+                if res["end"] is not None:
+                    raise DateParserError("Several end dates found")
+
+                res["end"] = date
+
+            if preposition_type is None:
+                dates_without_preposition.append(date)
+
+        if len(dates_without_preposition) == 2:
+            start, end = dates_without_preposition
+            res["start"] = start
+            res["end"] = end
+
+        if len(dates_without_preposition) == 1:
+            date = dates_without_preposition[0]
+
+            if res["end"] is not None:
+                res["start"] = date
+            elif res["start"] is not None:
+                res["end"] = date
+            elif state["end"] is not None:
+                res["start"] = date
+            elif state["start"] is not None:
+                res["end"] = date
+            else:
+                res["start"] = date
+
+        return res
+
+    def _update_state(self, res: ParamsStateUpdate, state: ParamsState) -> ParamsState:
+        update = cast(ParamsStateUpdate, {key: value for key, value in res.items() if value is not None})
+
+        new_state = state.copy()
+        new_state.update(update)
+
+        return new_state
+
+    def _validate_state(self, state: ParamsState) -> None:
+        today = self._get_today_date()
+        max_date = today + self.MAX_DATE_OFFSET
+
+        if state["start"] is not None:
+            if state["start"] < today:
+                raise DateParserError("Start date is in the past")
+
+            if state["start"] >= max_date:
+                raise DateParserError("Start date is too far in the future")
+
+        if state["end"] is not None:
+            if state["end"] < today:
+                raise DateParserError("End date is in the past")
+
+            if state["end"] >= max_date:
+                raise DateParserError("End date is too far in the future")
+
+        if state["start"] is not None and state["end"] is not None:
+            if state["end"] < state["start"]:
+                raise DateParserError("End date is earlier than start date")
