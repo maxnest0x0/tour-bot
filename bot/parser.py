@@ -1,7 +1,9 @@
 import re
+from typing import Final
 
 from ai.ai_parsers.city import CityParser
 from ai.re_parsers.date import DateParser
+from .data_types import InputParam, ParamsState
 
 class ParserError(Exception):
     pass
@@ -10,14 +12,14 @@ class TooLongTextError(ParserError):
     pass
 
 class InputParser:
-    MAX_LENGTH = 100
-    REQUIRED_PARAMS = ("origin", "destination", "start")
+    MAX_LENGTH: Final = 100
+    REQUIRED_PARAMS: Final[tuple[InputParam, ...]] = ("origin", "destination", "start")
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.city_parser = CityParser()
         self.date_parser = DateParser()
 
-    async def parse(self, text, state):
+    async def parse(self, text: str, state: ParamsState) -> ParamsState:
         if len(text) > self.MAX_LENGTH:
             raise TooLongTextError("Text is too long")
 
@@ -30,7 +32,7 @@ class InputParser:
 
         return new_state
 
-    def get_missing_params(self, state):
+    def get_missing_params(self, state: ParamsState) -> list[InputParam]:
         missing_params = []
 
         for param in self.REQUIRED_PARAMS:

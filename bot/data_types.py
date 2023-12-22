@@ -1,7 +1,9 @@
 import datetime as dt
-from typing import TypedDict, Optional, NotRequired
+from typing import TypedDict, Optional, NotRequired, Literal
 
 from search.aviasales.data_types import SuggestedPlace
+
+InputParam = Literal["origin", "destination", "start", "end"]
 
 class ParamsState(TypedDict):
     origin: Optional[SuggestedPlace]
