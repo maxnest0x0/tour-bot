@@ -2,16 +2,12 @@ import datetime as dt
 from emoji import emojize as emj
 
 class Text:
-    KEYS = {
+    PARAMS = {
         "origin": "Город отправления",
         "destination": "Город прибытия",
         "start": "Дата отправления",
         "end": "Дата отправления обратно",
     }
-
-    @staticmethod
-    def tag(tag, text):
-        return f"<{tag}>{text}</{tag}>"
 
     @staticmethod
     def nbsp():
@@ -25,43 +21,13 @@ class Text:
     def arrow():
         return "→"
 
+    @staticmethod
+    def tag(tag, text):
+        return f"<{tag}>{text}</{tag}>"
+
     @classmethod
-    def keys(cls, keys):
-        return ", ".join(cls.tag("i", key.lower() if i != 0 else key) for i, key in enumerate(keys))
-
-    @classmethod
-    def welcome(cls):
-        p1 = ":waving_hand: Привет! Скажите куда и когда вы хотите съездить, а я попытаюсь подобрать для вас билеты!"
-        p2 = "Вот что мне нужно узнать:"
-        p3 = cls.keys(cls.KEYS.values()) + " (если нужен обратный билет)"
-
-        return emj("\n".join((p1, p2, p3)))
-
-    @staticmethod
-    def processing_input():
-        return emj(":thinking_face: Обрабатываю ваш запрос...")
-
-    @staticmethod
-    def searching():
-        p1 = ":magnifying_glass_tilted_right: Ищу билеты по вашему запросу..."
-        p2 = "Это займёт немного времени."
-
-        return emj("\n".join((p1, p2)))
-
-    @staticmethod
-    def busy():
-        return emj(":hourglass_not_done: Пожалуйста, подождите, пока я работаю с предыдущим запросом.")
-
-    @staticmethod
-    def tickets_found():
-        return emj(":ticket: Вот, что мне удалось найти:")
-
-    @staticmethod
-    def no_tickets_found():
-        p1 = ":neutral_face: К сожалению, мне не удалось найти ни одного билета."
-        p2 = "Может быть вам подойдёт другая дата или другой город?"
-
-        return emj("\n".join((p1, p2)))
+    def params(cls, params):
+        return ", ".join(cls.tag("i", param.lower() if idx != 0 else param) for idx, param in enumerate(params))
 
     @staticmethod
     def date(date):
@@ -83,12 +49,46 @@ class Text:
         return f"{day}.{month}.{year}{cls.nbsp()}{hour}:{minute}"
 
     @classmethod
-    def current_state(cls, state):
-        p1 = ":airplane: Сейчас ваш запрос выглядит так:"
+    def welcome(cls):
+        line1 = ":waving_hand: Привет! Скажите куда и когда вы хотите съездить, а я попытаюсь подобрать для вас билеты!"
+        line2 = "Вот что мне нужно узнать:"
+        line3 = cls.params(cls.PARAMS.values()) + " (если нужен обратный билет)"
 
-        text = []
-        for key, value in state.items():
-            key_text = cls.tag("i", cls.KEYS[key])
+        return emj("\n".join((line1, line2, line3)))
+
+    @staticmethod
+    def processing_input():
+        return emj(":thinking_face: Обрабатываю ваш запрос...")
+
+    @staticmethod
+    def searching():
+        line1 = ":magnifying_glass_tilted_right: Ищу билеты по вашему запросу..."
+        line2 = "Это займёт немного времени."
+
+        return emj("\n".join((line1, line2)))
+
+    @staticmethod
+    def busy():
+        return emj(":hourglass_not_done: Пожалуйста, подождите, пока я работаю с предыдущим запросом.")
+
+    @staticmethod
+    def tickets_found():
+        return emj(":ticket: Вот, что мне удалось найти:")
+
+    @staticmethod
+    def no_tickets_found():
+        line1 = ":neutral_face: К сожалению, мне не удалось найти ни одного билета."
+        line2 = "Может быть вам подойдёт другая дата или другой город?"
+
+        return emj("\n".join((line1, line2)))
+
+    @classmethod
+    def params_state(cls, state):
+        line1 = ":airplane: Сейчас ваш запрос выглядит так:"
+
+        lines = []
+        for param, value in state.items():
+            param_text = cls.tag("i", cls.PARAMS[param])
 
             if value is None:
                 value_text = "?"
@@ -97,28 +97,28 @@ class Text:
             else:
                 value_text = cls.tag("b", value["name"])
 
-            text.append(f"{key_text}: {value_text}")
+            lines.append(f"{param_text}: {value_text}")
 
-        return emj("\n".join((p1, *text)))
-
-    @classmethod
-    def missing_keys(cls, keys):
-        p1 = ":red_question_mark: Для того, чтобы выполнить поиск, мне необходимо знать следующую информацию:"
-        p2 = cls.keys(cls.KEYS[key] for key in keys)
-
-        return emj("\n".join((p1, p2)))
+        return emj("\n".join((line1, *lines)))
 
     @classmethod
-    def badge(cls, badge):
-        return emj(":smiling_face_with_sunglasses: " + cls.tag("b", f"{badge}!"))
+    def missing_params(cls, params):
+        line1 = ":red_question_mark: Для того, чтобы выполнить поиск, мне необходимо знать следующую информацию:"
+        line2 = cls.params(cls.PARAMS[param] for param in params)
+
+        return emj("\n".join((line1, line2)))
+
+    @classmethod
+    def badge(cls, name):
+        return emj(":smiling_face_with_sunglasses: " + cls.tag("b", f"{name}!"))
 
     @classmethod
     def price(cls, price):
         return emj(":money_bag: " + cls.tag("i", "Цена") + ": " + cls.tag("b", price) + cls.nbsp() + cls.rouble())
 
     @classmethod
-    def price_with_baggage(cls, price_with_baggage):
-        return emj(":luggage: " + cls.tag("i", "Цена с багажом") + ": " + cls.tag("b", price_with_baggage) + cls.nbsp() + cls.rouble())
+    def price_with_baggage(cls, price):
+        return emj(":luggage: " + cls.tag("i", "Цена с багажом") + ": " + cls.tag("b", price) + cls.nbsp() + cls.rouble())
 
     @classmethod
     def to_there(cls):
@@ -128,8 +128,8 @@ class Text:
     def from_there(cls):
         return emj(":airplane_arrival: " + cls.tag("u", "Обратно:"))
 
-    @classmethod
-    def place(cls, place):
+    @staticmethod
+    def place(place):
         city = place["city"]["name"]
         airport = place["airport"]["name"]
 
@@ -143,13 +143,13 @@ class Text:
         arrow = cls.nbsp() + cls.tag("b", cls.arrow()) + cls.nbsp()
         return f"{origin} ({departure}){arrow}{destination} ({arrival})"
 
-    @classmethod
-    def link(cls, link):
-        return emj(":link: " + link)
+    @staticmethod
+    def link(url):
+        return emj(":link: " + url)
 
     @classmethod
-    def error_text(cls, error):
-        return emj(":prohibited: " + cls.tag("code", error))
+    def error_text(cls, text):
+        return emj(":prohibited: " + cls.tag("code", text))
 
     @staticmethod
     def repeat_input():
@@ -157,28 +157,28 @@ class Text:
 
     @classmethod
     def city_error(cls):
-        p1 = ":cityscape: Похоже, мне не удалось однозначно распознать название города/городов в вашем запросе!"
-        p2 = cls.repeat_input()
+        line1 = ":cityscape: Похоже, мне не удалось однозначно распознать название города/городов в вашем запросе!"
+        line2 = cls.repeat_input()
 
-        return emj("\n".join((p1, p2)))
+        return emj("\n".join((line1, line2)))
 
     @classmethod
     def date_error(cls):
-        p1 = ":calendar: Кажется, мне не удалось однозначно распознать дату/даты в вашем запросе!"
-        p2 = cls.repeat_input()
+        line1 = ":calendar: Кажется, мне не удалось однозначно распознать дату/даты в вашем запросе!"
+        line2 = cls.repeat_input()
 
-        return emj("\n".join((p1, p2)))
+        return emj("\n".join((line1, line2)))
 
     @classmethod
     def too_long_error(cls):
-        p1 = ":exploding_head: Хмм, запрос слишком длинный и мне сложно понять его!"
-        p2 = cls.repeat_input()
+        line1 = ":exploding_head: Хмм, запрос слишком длинный и мне сложно понять его!"
+        line2 = cls.repeat_input()
 
-        return emj("\n".join((p1, p2)))
+        return emj("\n".join((line1, line2)))
 
     @staticmethod
     def unknown_error():
-        p1 = ":face_screaming_in_fear: Ой, произошла неожиданная ошибка!"
-        p2 = "Не беспокойтесь, мы скоро её исправим."
+        line1 = ":face_screaming_in_fear: Ой, произошла неожиданная ошибка!"
+        line2 = "Не беспокойтесь, мы скоро её исправим."
 
-        return emj("\n".join((p1, p2)))
+        return emj("\n".join((line1, line2)))

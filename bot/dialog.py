@@ -56,7 +56,7 @@ class Dialog:
 
         keys = self.parser.get_missing_params(self.state)
         if keys:
-            text = Text.current_state(self.state) + "\n\n" + Text.missing_keys(keys)
+            text = Text.params_state(self.state) + "\n\n" + Text.missing_params(keys)
             await self.edit(text)
 
             self.message = None
