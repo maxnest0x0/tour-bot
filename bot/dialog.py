@@ -4,14 +4,14 @@ import telegram as tg
 from .parser import InputParser, TooLongTextError
 from parsers.city import CityParserError
 from parsers.date import DateParserError
-from .tickets import TicketsSearch
+from .aggregator import TicketAggregator
 from .text import Text
 
 class Dialog:
     LIFETIME = dt.timedelta(minutes=10)
 
     parser = InputParser()
-    search = TicketsSearch()
+    search = TicketAggregator()
 
     def __init__(self, chat):
         self.chat = chat
@@ -64,8 +64,7 @@ class Dialog:
 
         await self.edit(Text.searching())
         try:
-            res = await self.search.search(self.state)
-            text = await self.search.make_text(res)
+            text = await self.search.search(self.state)
         except Exception as error:
             await self.edit(Text.unknown_error())
             self.reset_state()
