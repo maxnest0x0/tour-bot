@@ -1,7 +1,7 @@
 import datetime as dt
 import telegram as tg
 
-from .parser import Parser, TooLongTextError
+from .parser import InputParser, TooLongTextError
 from ai.ai_parsers.city import CityParserError
 from ai.re_parsers.date import DateParserError
 from .tickets import TicketsSearch
@@ -10,7 +10,7 @@ from .text import Text
 class Dialog:
     LIFETIME = dt.timedelta(minutes=10)
 
-    parser = Parser()
+    parser = InputParser()
     search = TicketsSearch()
 
     def __init__(self, chat):
@@ -39,7 +39,7 @@ class Dialog:
         await self.send(Text.processing_input(), True)
 
         try:
-            await self.parser.parse(text, self.state)
+            self.state = await self.parser.parse(text, self.state)
         except CityParserError as error:
             await self.edit(Text.city_error() + "\n" + Text.error_text(str(error)))
             raise error
@@ -54,7 +54,7 @@ class Dialog:
             self.reset_state()
             raise error
 
-        keys = self.parser.get_missing_keys(self.state)
+        keys = self.parser.get_missing_params(self.state)
         if keys:
             text = Text.current_state(self.state) + "\n\n" + Text.missing_keys(keys)
             await self.edit(text)

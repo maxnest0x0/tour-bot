@@ -1,5 +1,4 @@
 import re
-import datetime as dt
 
 from ai.ai_parsers.city import CityParser
 from ai.re_parsers.date import DateParser
@@ -10,8 +9,9 @@ class ParserError(Exception):
 class TooLongTextError(ParserError):
     pass
 
-class Parser:
+class InputParser:
     MAX_LENGTH = 100
+    REQUIRED_PARAMS = ("origin", "destination", "start")
 
     def __init__(self):
         self.city_parser = CityParser()
@@ -28,12 +28,13 @@ class Parser:
         new_state = await self.city_parser.parse(text, new_state)
         new_state = self.date_parser.parse(text, new_state)
 
-        state.update(new_state)
+        return new_state
 
-    def get_missing_keys(self, state):
-        keys = []
-        for key in ("origin", "destination", "start"):
-            if state[key] is None:
-                keys.append(key)
+    def get_missing_params(self, state):
+        missing_params = []
 
-        return keys
+        for param in self.REQUIRED_PARAMS:
+            if state[param] is None:
+                missing_params.append(param)
+
+        return missing_params
