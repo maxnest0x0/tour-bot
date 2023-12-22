@@ -1,6 +1,6 @@
 from bot.app import Bot
 
-def main():
+def main() -> None:
     bot = Bot()
     bot.run()
 

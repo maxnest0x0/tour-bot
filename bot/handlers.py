@@ -38,6 +38,7 @@ class Handlers:
         dialog = self._bot.dialogs[chat_id]
 
         if not dialog.is_busy():
+            assert update.message.text is not None
             await dialog.process_input(update.message.text)
         else:
             await self._send(update, Text.busy())
