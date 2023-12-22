@@ -51,30 +51,6 @@ class AviasalesAPI:
         return res
 
     @classmethod
-    def get_ticket_url(cls, ticket: Ticket) -> str:
-        search_page_code = ""
-
-        first_flight = ticket["segments"][0]["flights"][0]
-        search_page_code += first_flight["origin"]["city"]["code"]
-
-        first_departure = first_flight["departure"]["local_datetime"]
-        search_page_code += first_departure[8:10] + first_departure[5:7]
-
-        last_flight = ticket["segments"][0]["flights"][-1]
-        search_page_code += last_flight["destination"]["city"]["code"]
-
-        if len(ticket["segments"]) == 2:
-            last_departure = ticket["segments"][1]["flights"][0]["departure"]["local_datetime"]
-            search_page_code += last_departure[8:10] + last_departure[5:7]
-
-        search_page_code += "1"
-
-        ticket_code = "0" * 30 + "a_" + ticket["id"] + "_" + str(ticket["price"]["default"])
-
-        ticket_url = f"https://www.{cls.AVIASALES_DOMAIN}/search/{search_page_code}?t={ticket_code}"
-        return ticket_url
-
-    @classmethod
     async def suggest_places(cls, text: str, limit: int, place_types: Sequence[str]=("airport", "city", "country")) -> list[SuggestedPlace]:
         body = [("term", text), ("max", limit)]
         for place_type in place_types:
