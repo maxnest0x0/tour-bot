@@ -3,22 +3,28 @@ import telegram.ext as ext
 
 from .handlers import Handlers
 
+class BotError(Exception):
+    pass
+
 class Bot:
     def __init__(self):
-        self.handlers = Handlers(self)
+        self._handlers = Handlers(self)
         self.dialogs = {}
+
+        token = os.environ.get("TOKEN")
+        if token is None:
+            raise BotError("TOKEN env variable not found")
 
         builder = ext.ApplicationBuilder()
         builder.concurrent_updates(True)
-        builder.token(os.environ["TOKEN"])
+        builder.token(token)
 
         self.app = builder.build()
-        self.set_handlers()
-        self.run()
+        self._set_handlers()
 
-    def set_handlers(self):
-        self.app.add_handler(ext.CommandHandler("start", self.handlers.start))
-        self.app.add_handler(ext.MessageHandler(ext.filters.TEXT & ~ext.filters.COMMAND, self.handlers.message))
+    def _set_handlers(self):
+        self.app.add_handler(ext.CommandHandler("start", self._handlers.start))
+        self.app.add_handler(ext.MessageHandler(ext.filters.TEXT & ~ext.filters.COMMAND, self._handlers.message))
 
     def run(self):
         self.app.run_polling()
