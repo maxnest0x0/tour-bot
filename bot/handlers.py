@@ -15,7 +15,7 @@ class Handlers:
 
     async def _send(self, update: tg.Update, text: str) -> None:
         assert update.message is not None
-        await update.message.reply_text(Text.welcome(), tg.constants.ParseMode.HTML, True)
+        await update.message.reply_text(text, tg.constants.ParseMode.HTML, True)
 
     async def start(self, update: tg.Update, context: ext.ContextTypes.DEFAULT_TYPE) -> None:
         if update.message is not None:
