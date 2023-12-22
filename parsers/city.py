@@ -1,9 +1,9 @@
 import spacy
-from typing import Final, Sequence, cast
+from typing import Final, Sequence
 
 from search.aviasales.api import AviasalesAPI, AviasalesAPIError
-from ..parser import Parser
-from .data_types import *
+from .base_parser import Parser
+from .data_types import CityPrepositionType, LocationWithPrepositionType, CityWithPrepositionType
 from bot.data_types import ParamsState, ParamsStateUpdate
 
 class CityParserError(Exception):
@@ -56,10 +56,10 @@ class CityParser(Parser):
                 preposition = ent.doc[ent.start - 1].lower_
 
                 if preposition in self.ORIGIN_PREPOSITIONS:
-                    preposition_type = PrepositionType.ORIGIN
+                    preposition_type = CityPrepositionType.ORIGIN
 
                 if preposition in self.DESTINATION_PREPOSITIONS:
-                    preposition_type = PrepositionType.DESTINATION
+                    preposition_type = CityPrepositionType.DESTINATION
 
             locations_with_preposition_type.append(LocationWithPrepositionType(preposition_type, ent.text))
 
@@ -93,13 +93,13 @@ class CityParser(Parser):
         cities_without_preposition = []
 
         for preposition_type, city in cities_with_preposition_type:
-            if preposition_type == PrepositionType.ORIGIN:
+            if preposition_type == CityPrepositionType.ORIGIN:
                 if res["origin"] is not None:
                     raise CityParserError("Several origin cities found")
 
                 res["origin"] = city
 
-            if preposition_type == PrepositionType.DESTINATION:
+            if preposition_type == CityPrepositionType.DESTINATION:
                 if res["destination"] is not None:
                     raise CityParserError("Several destination cities found")
 

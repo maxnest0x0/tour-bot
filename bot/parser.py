@@ -1,8 +1,8 @@
 import re
 from typing import Final
 
-from ai.ai_parsers.city import CityParser
-from ai.re_parsers.date import DateParser
+from parsers.city import CityParser
+from parsers.date import DateParser
 from .data_types import InputParam, ParamsState
 
 class ParserError(Exception):

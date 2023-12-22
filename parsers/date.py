@@ -1,9 +1,10 @@
 import re
 import datetime as dt
-from typing import Final, Sequence, cast
+from typing import Final, Sequence
 
-from ..parser import Parser
-from .data_types import *
+from .base_parser import Parser
+from .data_types import DatePrepositionType, DateTextTuple, DateTuple, FilledDateTuple
+from .data_types import DateTextTupleWithIndex, DateTextTupleWithPrepositionType, DateWithPrepositionType
 from bot.data_types import ParamsState, ParamsStateUpdate
 
 class DateParserError(Exception):
@@ -96,10 +97,10 @@ class DateParser(Parser):
                 preposition = words[-1].lower()
 
                 if preposition in self.START_PREPOSITIONS:
-                    preposition_type = PrepositionType.START
+                    preposition_type = DatePrepositionType.START
 
                 if preposition in self.END_PREPOSITIONS:
-                    preposition_type = PrepositionType.END
+                    preposition_type = DatePrepositionType.END
 
             date_text_tuples_with_preposition_type.append(DateTextTupleWithPrepositionType(preposition_type, date_text_tuple))
 
@@ -219,13 +220,13 @@ class DateParser(Parser):
         dates_without_preposition = []
 
         for preposition_type, date in dates_with_preposition_type:
-            if preposition_type == PrepositionType.START:
+            if preposition_type == DatePrepositionType.START:
                 if res["start"] is not None:
                     raise DateParserError("Several start dates found")
 
                 res["start"] = date
 
-            if preposition_type == PrepositionType.END:
+            if preposition_type == DatePrepositionType.END:
                 if res["end"] is not None:
                     raise DateParserError("Several end dates found")
 
